@@ -9,7 +9,7 @@ import paho.mqtt.client as mqtt
 #URI com as credenciais root:root e porto 27017 (padrão do MongoDB).
 uri = "mongodb://root:root@localhost:27017/"
 timeout = 2000  # Tempo de espera - 2 segundos.
-bdTeste = "pisid_maze_db"
+pisid = "pisid_maze_db"
 collectionTeste = "teste"
 message = {"mensagem": "Enviado do Visual Studio", "status": "OK"}
 db = None  # Variável global para a base de dados, para ser usada na função de callback do MQTT.
@@ -90,7 +90,7 @@ def on_message(client, userdata, msg):
             colecao = db['sensor_movimento']
             tipo = "MOV"
         else:
-            colecao = db['acoes_jogo']
+            colecao = db['atuadores']
             tipo = "AÇÃO"
 
         # Inserir no MongoDB
