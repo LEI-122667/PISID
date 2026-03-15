@@ -6,6 +6,7 @@ import paho.mqtt.client as mqtt
 #https://pypi.org/project/pymongo/
 #https://www.emqx.com/en/blog/how-to-use-mqtt-in-python#real-world-python-mqtt-examples
 #
+
 #URI com as credenciais root:root e porto 27017 (padrão do MongoDB).
 uri = "mongodb://root:root@localhost:27017/"
 timeout = 2000  # Tempo de espera - 2 segundos.
@@ -24,22 +25,9 @@ try:
     
     # Testar se o servidor responde.
     clientMongoDB.server_info() 
-    print("Ligação ao MongoDB estabelecida com sucesso!\n")
-  
-    #Criar a base de dados, uma coleção de teste e insere um documento.
-    db = clientMongoDB[bdTeste]
-    colecao = db[collectionTeste]
-    resultado = colecao.insert_one(message)
-    print(f"Documento inserido! ID: {resultado.inserted_id}")
+    print("\nLigação ao MongoDB estabelecida com sucesso!\n")
 
-
-    # Listar as DBs, coleções e o conteúdo para confirmar.
-    print(f"Bases de dados: {clientMongoDB.list_database_names()}")
-    print(f"Coleções em {bdTeste}: {db.list_collection_names()}")
-
-    documentos = list(colecao.find())
-    print(f"Documentos na coleção: {documentos}")
-
+    db = clientMongoDB[pisid]
 except Exception as e:
     print(f"Erro: {e}")
 
@@ -55,8 +43,9 @@ TOPICOS = [
     "pisid_mazesound_2",
     "pisid_mazetemp_2",
     "pisid_mazemov_2",
-    "pisid_mazeact"
+    "pisid_mazeact", "pisid_grupo2_dadosFiltrados"
 ]
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f"✅ MQTT: Ligado ao Broker {MQTT_BROKER}")
@@ -89,6 +78,9 @@ def on_message(client, userdata, msg):
         elif "mov" in topico:
             colecao = db['sensor_movimento']
             tipo = "MOV"
+        elif "dadosFiltrados" in topico:
+            colecao = db['dados_filtrados']
+            tipo = "DADOS FILTRADOS"
         else:
             colecao = db['atuadores']
             tipo = "AÇÃO"
