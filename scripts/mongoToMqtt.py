@@ -26,7 +26,7 @@ try:
     
     # Testar se o servidor responde.
     clientMongoDB.server_info() 
-    print("Ligação ao MongoDB estabelecida com sucesso!\n")
+    print("\nLigação ao MongoDB estabelecida com sucesso!\n")
 
 except Exception as e:
     print(f"Erro: {e}")
