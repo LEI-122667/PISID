@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even" />
+    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/mqqtToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/mqqtToMySql.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -79,17 +82,8 @@
       </deployment>
       <method v="2" />
     </configuration>
-    <configuration name="docker-compose.yaml: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
-      <deployment type="docker-compose.yml">
-        <settings>
-          <option name="sourceFilePath" value="docker-compose.yaml" />
-        </settings>
-      </deployment>
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Docker.docker-compose.yaml: Compose Deployment" />
         <item itemvalue="Docker.docker-compose.yaml: Compose Deployment" />
         <item itemvalue="Docker.docker-compose.yaml: Compose Deployment" />
       </list>
@@ -112,7 +106,7 @@
       <updated>1773695172916</updated>
       <workItem from="1773695173422" duration="1327000" />
       <workItem from="1773709439261" duration="2371000" />
-      <workItem from="1773711839026" duration="413000" />
+      <workItem from="1773711839026" duration="620000" />
     </task>
     <task id="LOCAL-00001" summary="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even">
       <option name="closed" value="true" />
@@ -130,7 +124,15 @@
       <option name="project" value="LOCAL" />
       <updated>1773711589526</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even">
+      <option name="closed" value="true" />
+      <created>1773712261292</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1773712261292</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -150,5 +152,15 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even" />
     <option name="LAST_COMMIT_MESSAGE" value="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/mongoToMqtt.py</url>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
