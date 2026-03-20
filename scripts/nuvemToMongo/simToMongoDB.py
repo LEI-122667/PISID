@@ -78,12 +78,6 @@ def on_message(client, userdata, msg):
         elif "mov" in topico:
             colecao = db['sensor_movimento']
             tipo = "MOV"
-        elif "dadosFiltrados" in topico:
-            colecao = db['dados_filtrados']
-            tipo = "DADOS FILTRADOS"
-        else:
-            colecao = db['atuadores']
-            tipo = "AÇÃO"
 
         # Inserir no MongoDB
         # O MongoDB vai guardar o campo 'Player' que já vem no JSON do simulador
