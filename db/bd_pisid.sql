@@ -6,7 +6,7 @@ CREATE TABLE Utilizador (
     IDUtilizador INT AUTO_INCREMENT PRIMARY KEY,
     Nome VARCHAR(100) NOT NULL,
     Telemovel VARCHAR(12),
-    Tipo ENUM('Criador','Editor','Leitor','AdminBD','AdminSite') NOT NULL,
+    Tipo ENUM('AdminSite','Criador','Leitor') NOT NULL,
     Email VARCHAR(50) UNIQUE,
     DataNascimento DATE,
     Equipa INT
@@ -16,7 +16,7 @@ CREATE TABLE Simulacao (
     IDSimulacao INT AUTO_INCREMENT PRIMARY KEY,
     Descricao TEXT,
     Equipa INT,
-    DataHoraInicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    DataHoraInicio TIMESTAMP,
     Pontuacao INT DEFAULT 0,
     ArCondicionado BOOLEAN DEFAULT FALSE,
     QuantasCorredoresFechados INT DEFAULT 0
@@ -24,28 +24,31 @@ CREATE TABLE Simulacao (
 
 CREATE TABLE MedicoesPassagens (
     IDMedicao INT AUTO_INCREMENT PRIMARY KEY,
-    Hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Hora TIMESTAMP,
     SalaOrigem INT,
     SalaDestino INT,
     Marsami INT,
-    Status INT CHECK (Status IN (1,2))
+    Status INT,
+    ObjectId VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Temperatura (
     IDTemperatura INT AUTO_INCREMENT PRIMARY KEY,
-    Hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    Temperatura VARCHAR(12)
+    Hora TIMESTAMP,
+    Temperatura DECIMAL(6,2),
+    ObjectId VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Som (
     IDSom INT AUTO_INCREMENT PRIMARY KEY,
-    Hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    Som VARCHAR(12)
+    Hora TIMESTAMP,
+    Som DECIMAL(6,2),
+    ObjectId VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Mensagens (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    Hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Hora TIMESTAMP,
     Sala INT,
     Sensor VARCHAR(10),
     Leitura DECIMAL(6,2),
@@ -68,21 +71,16 @@ CREATE TABLE SetupMaze (
     NumberRooms INT NOT NULL,
     NumberMarsamis INT NOT NULL,
     NumberPlayers INT,
-    NormalTemperature DECIMAL(5,2) NOT NULL,
-    TemperatureVarHighToleration DECIMAL(5,2) NOT NULL,
-    TemperatureVarLowToleration DECIMAL(5,2) NOT NULL,
-    NormalNoise DECIMAL(5,2) NOT NULL,
-    NoiseVarToleration DECIMAL(5,2) NOT NULL
+    NormalTemperature DECIMAL(6,2) NOT NULL,
+    TemperatureVarHighToleration DECIMAL(6,2) NOT NULL,
+    TemperatureVarLowToleration DECIMAL(6,2) NOT NULL,
+    NormalNoise DECIMAL(6,2) NOT NULL,
+    NoiseVarToleration DECIMAL(6,2) NOT NULL
 );
 
--- Trigger com sintaxe limpa para o Docker
-DELIMITER //
-CREATE TRIGGER decrementa_gatilho
-BEFORE UPDATE ON OcupacaoLabirinto
-FOR EACH ROW
-BEGIN
-    IF NEW.Gatilho >= 3 THEN
-        SET NEW.Gatilho = NEW.Gatilho - 1;
-    END IF;
-END//
-DELIMITER ;
+CREATE TABLE Corridor (
+    IDCorridor INT AUTO_INCREMENT PRIMARY KEY,
+    RoomA INT NOT NULL,
+    RoomB INT NOT NULL
+);
+DELIMITER $$
