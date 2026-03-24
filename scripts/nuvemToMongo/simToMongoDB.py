@@ -43,7 +43,6 @@ TOPICOS = [
     "pisid_mazesound_2",
     "pisid_mazetemp_2",
     "pisid_mazemov_2",
-    "pisid_mazeact", "pisid_grupo2_dadosFiltrados"
 ]
 
 def on_connect(client, userdata, flags, rc):
@@ -66,6 +65,10 @@ def on_message(client, userdata, msg):
         raw_payload = msg.payload.decode().replace("'", '"')
         payload = json.loads(raw_payload)
 
+        payload['lido'] = False
+        payload['inserido'] = 0  
+        payload['tempoQuandoFoiLido'] = None
+
         topico = msg.topic
         
         # Identificar o tipo de dado pelo tópico para guardar na coleção certa
@@ -78,9 +81,16 @@ def on_message(client, userdata, msg):
         elif "mov" in topico:
             colecao = db['sensor_movimento']
             tipo = "MOV"
+        else:
+            print(f"⚠️ Tópico desconhecido: {topico}")
+            colecao = db['dados_desconecidos']
+            tipo = "DESCONHECIDO"
+            return
 
-        # Inserir no MongoDB
-        # O MongoDB vai guardar o campo 'Player' que já vem no JSON do simulador
+        payload['lido'] = False
+        payload['inserido'] = 0  
+        payload['tempoQuandoFoiLido'] = None
+        
         colecao.insert_one(payload)
         
         print(f"💾 [{tipo}] Jogador {payload.get('Player')}: {payload}")
