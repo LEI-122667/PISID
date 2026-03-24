@@ -1,4 +1,3 @@
--- Garante que as tabelas vão para o sítio certo
 CREATE DATABASE IF NOT EXISTS bd_pisid;
 USE bd_pisid;
 
@@ -18,8 +17,7 @@ CREATE TABLE Simulacao (
     Equipa INT,
     DataHoraInicio TIMESTAMP,
     Pontuacao INT DEFAULT 0,
-    ArCondicionado BOOLEAN DEFAULT FALSE,
-    QuantasCorredoresFechados INT DEFAULT 0
+    ArCondicionado BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE MedicoesPassagens (
@@ -81,6 +79,8 @@ CREATE TABLE SetupMaze (
 CREATE TABLE Corridor (
     IDCorridor INT AUTO_INCREMENT PRIMARY KEY,
     RoomA INT NOT NULL,
-    RoomB INT NOT NULL
+    RoomB INT NOT NULL,
+	Fechado BOOLEAN DEFAULT FALSE
 );
+
 DELIMITER $$
