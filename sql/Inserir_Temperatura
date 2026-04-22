@@ -1,0 +1,78 @@
+DELIMITER $$
+
+CREATE PROCEDURE Inserir_Temperatura(
+    IN p_MongoId INT,
+    IN p_Hora TIMESTAMP,
+    IN p_Temperatura DECIMAL(6,2)
+)
+BEGIN
+    -- Declaração do Handler para erros críticos do MySQL
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        -- Se houver um erro técnico (ex: perda de conexão, erro de disco), retorna 0
+        SELECT 0 AS Result;
+    END;
+
+    -- Variáveis de controlo
+    DECLARE v_IDSimulacao INT;
+    DECLARE v_ArCondicionado BOOLEAN;
+    DECLARE v_UltimaTemp DECIMAL(6,2);
+    DECLARE v_CountMongo INT;
+
+    -- 1. Verificar se o MongoID é nulo (Dado Inválido)
+    IF p_MongoId IS NULL THEN
+        SELECT -1 AS Result;
+
+    ELSE
+        -- 2. Verificar se o MongoID já existe (Duplicado)
+        SELECT COUNT(*) INTO v_CountMongo FROM Temperatura WHERE MongoId = p_MongoId;
+        
+        IF v_CountMongo > 0 THEN
+            SELECT -2 AS Result;
+            
+        ELSE
+            -- 3. Obter Simulação Ativa
+            SELECT IDSimulacao, ArCondicionado INTO v_IDSimulacao, v_ArCondicionado 
+            FROM Simulacao 
+            WHERE Ativo = TRUE 
+            LIMIT 1;
+
+            -- Se não houver simulação ativa ou data for futura (Dado Inválido)
+            IF v_IDSimulacao IS NULL OR p_Hora > NOW() THEN
+                SELECT -1 AS Result;
+
+            ELSE
+                -- 4. Procurar última leitura por MongoId
+                SELECT Temperatura INTO v_UltimaTemp 
+                FROM Temperatura 
+                WHERE IDSimulacao = v_IDSimulacao 
+                ORDER BY MongoId DESC 
+                LIMIT 1;
+
+                -- 5. Lógica do Ar Condicionado (Dado Inválido se violar a regra)
+                IF v_UltimaTemp IS NOT NULL THEN
+                    
+                    -- Regra: AC Ligado -> Não pode subir | AC Desligado -> Não pode descer
+                    IF (v_ArCondicionado = TRUE AND p_Temperatura > v_UltimaTemp) OR
+                       (v_ArCondicionado = FALSE AND p_Temperatura < v_UltimaTemp) THEN
+                        SELECT -1 AS Result;
+                    
+                    ELSE
+                        -- Inserção bem-sucedida
+                        INSERT INTO Temperatura (IDSimulacao, Hora, Temperatura, MongoId)
+                        VALUES (v_IDSimulacao, p_Hora, p_Temperatura, p_MongoId);
+                        SELECT 1 AS Result;
+                    END IF;
+
+                ELSE
+                    -- Primeira leitura: Sem comparação
+                    INSERT INTO Temperatura (IDSimulacao, Hora, Temperatura, MongoId)
+                    VALUES (v_IDSimulacao, p_Hora, p_Temperatura, p_MongoId);
+                    SELECT 1 AS Result;
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+DELIMITER ;
