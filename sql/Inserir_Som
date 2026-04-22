@@ -6,35 +6,38 @@ CREATE PROCEDURE Inserir_Som(
     IN p_Som DECIMAL(6,2)
 )
 BEGIN
-    -- Handler para erros técnicos (retorna 0)
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
-    BEGIN
-        SELECT 0 AS Result;
-    END;
-
-    -- Variáveis de controlo
+    -- 1. DECLARAÇÃO DE VARIÁVEIS (Sempre no topo)
     DECLARE v_IDSimulacao INT;
     DECLARE v_CountMongo INT;
 
-    -- 1. Verificar se o MongoID é nulo (Dado Inválido)
+    -- 2. DECLARAÇÃO DE HANDLERS (Depois das variáveis)
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        -- Retorna 0 em caso de erro técnico/crítico no MySQL
+        SELECT 0 AS Result;
+    END;
+
+    -- 3. LÓGICA DA PROCEDURE
+    
+    -- Verificar se o MongoID é nulo (Dado Inválido)
     IF p_MongoId IS NULL THEN
         SELECT -1 AS Result;
 
     ELSE
-        -- 2. Verificar se o MongoID já existe (Duplicado)
+        -- Verificar se o MongoID já existe (Duplicado)
         SELECT COUNT(*) INTO v_CountMongo FROM Som WHERE MongoId = p_MongoId;
         
         IF v_CountMongo > 0 THEN
             SELECT -2 AS Result;
             
         ELSE
-            -- 3. Obter Simulação Ativa
+            -- Obter Simulação Ativa
             SELECT IDSimulacao INTO v_IDSimulacao 
             FROM Simulacao 
             WHERE Ativo = TRUE 
             LIMIT 1;
 
-            -- 4. Validações de "Dado Inválido" (-1)
+            -- Validações de "Dado Inválido" (-1)
             -- - Som não pode ser negativo
             -- - Deve haver uma simulação ativa
             -- - A data não pode ser futura
@@ -42,12 +45,16 @@ BEGIN
                 SELECT -1 AS Result;
 
             ELSE
-                -- 5. Tentativa de Inserção
+                -- Tentativa de Inserção
                 INSERT INTO Som (IDSimulacao, Hora, Som, MongoId)
                 VALUES (v_IDSimulacao, p_Hora, p_Som, p_MongoId);
                 
-                -- Se chegou aqui sem disparar o Handler, a inserção correu bem
-                SELECT 1 AS Result;
+                -- Se a inserção falhar sem erro crítico (ex: 0 linhas afetadas)
+                IF ROW_COUNT() > 0 THEN
+                    SELECT 1 AS Result;
+                ELSE
+                    SELECT 0 AS Result;
+                END IF;
             END IF;
         END IF;
     END IF;
