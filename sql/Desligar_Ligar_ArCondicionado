@@ -1,0 +1,40 @@
+DELIMITER $$
+
+CREATE PROCEDURE Desligar_Ligar_ArCondicionado(
+    IN p_Estado BOOLEAN
+)
+BEGIN
+    -- 1. DECLARAÇÃO DE VARIÁVEIS (Sempre primeiro!)
+    DECLARE v_IDSimulacao INT;
+
+    -- 2. HANDLER PARA ERROS TÉCNICOS (Retorna 0 se o MySQL falhar)
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        SELECT 0 AS Result;
+    END;
+
+    -- 3. VERIFICAR SE EXISTE UMA SIMULAÇÃO ATIVA
+    SELECT IDSimulacao INTO v_IDSimulacao 
+    FROM Simulacao 
+    WHERE Ativo = TRUE 
+    LIMIT 1;
+
+    -- 4. LÓGICA DE EXECUÇÃO E FEEDBACK
+    IF v_IDSimulacao IS NULL THEN
+        -- Retorna -1: Não há jogo a decorrer para alterar o AC
+        SELECT -1 AS Result;
+    
+    ELSE
+        -- Tentar atualizar o estado
+        UPDATE Simulacao 
+        SET ArCondicionado = p_Estado 
+        WHERE IDSimulacao = v_IDSimulacao;
+
+        -- Se chegámos aqui sem disparar o Handler, a operação foi concluída
+        -- Retornamos 1 indicando que o estado atual da DB é o solicitado
+        SELECT 1 AS Result;
+        
+    END IF;
+END$$
+
+DELIMITER ;
