@@ -1,0 +1,63 @@
+DELIMITER $$
+
+CREATE PROCEDURE Ativar_Gatilho(
+    IN p_SalaId INT,
+    IN p_Gatilho INT
+)
+BEGIN
+
+	-- 1. DECLARAÇÃO DE VARIÁVEIS
+    DECLARE v_IDSimulacao INT;
+    DECLARE v_NGatilhoSala INT;
+    DECLARE v_DiferencaGatilho INT;
+    
+    -- 2. HANDLER PARA ERROS TÉCNICOS (Retorna 0)
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        SELECT 0 AS Result;
+    END;
+    
+    -- 3. VERIFICAR SE EXISTE UMA SIMULAÇÃO ATIVA
+    SELECT IDSimulacao INTO v_IDSimulacao 
+    FROM Simulacao 
+    WHERE Ativo = TRUE 
+    LIMIT 1;
+    
+    IF v_IDSimulacao IS NULL THEN
+        -- Retorna -1: Não há jogo a decorrer
+        SELECT -1 AS Result;
+    
+    ELSE
+            
+    	-- 4. VERIFICA SE GATILHO DA SALA FICA IGUAL OU MENOR QUE 0
+    	SELECT Gatilho INTO v_NGatilhoSala
+    	FROM ocupacaolabirinto
+    	WHERE Sala = p_SalaId AND IDSimulacao = v_IDSimulacao
+    	LIMIT 1;
+        
+        IF v_NGatilhoSala IS NULL THEN
+        	-- Retorna -1: Sala não existe
+        	SELECT -1 AS Result;
+        
+        ELSE
+        	SET v_DiferencaGatilho = v_NGatilhoSala - p_Gatilho;
+        
+        	IF v_DiferencaGatilho < 0 THEN
+    			-- Retorna -1: Não há gatilhos suficientes para decrementar
+    			SELECT -1 AS Result;
+            
+        	ELSE 
+        		UPDATE ocupacaolabirinto
+        		SET Gatilho = v_DiferencaGatilho
+      			WHERE Sala = p_SalaId AND IDSimulacao = v_IDSimulacao;
+        
+        		-- Se chegámos aqui sem disparar o Handler, a operação foi concluída
+        		-- Retornamos 1 indicando que o estado atual da DB é o solicitado
+        		SELECT 1 AS Result;
+            END IF;
+    	END IF;
+    END IF;
+    
+END$$
+
+DELIMITER ;
