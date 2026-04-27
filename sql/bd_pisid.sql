@@ -24,7 +24,7 @@ CREATE TABLE Utilizador (
     Tipo           ENUM('Admin','Criador','Leitor') NOT NULL,
     Email          VARCHAR(50)    UNIQUE,
     DataNascimento DATE,
-    Equipa         INT,           -- References Simulacao(Equipa)
+    Equipa         INT           -- References Simulacao(Equipa)
 );
 
 -- ─────────────────────────────────────────────
