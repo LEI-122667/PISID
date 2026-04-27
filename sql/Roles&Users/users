@@ -2,7 +2,7 @@
 -- USERS
 -- ─────────────────────────────────────────────
 
-CREATE USER 'admin_user'@'localhost'        IDENTIFIED BY 'admin!';
+CREATE USER 'admin_user'@'localhost'        IDENTIFIED BY 'admin';
 CREATE USER 'utilizador_user'@'localhost'   IDENTIFIED BY 'utilizador';
 CREATE USER 'android_user'@'localhost'      IDENTIFIED BY 'android';
 CREATE USER 'agente_user'@'localhost'       IDENTIFIED BY 'agente';
