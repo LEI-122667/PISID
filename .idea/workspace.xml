@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mqqtToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/mqqtToMySql.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/mqqtToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/mqttToMySql/movimentoMqqtToMySql.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,12 +34,12 @@
     &quot;assignee&quot;: &quot;PedroAngelino&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/LEI-122667/PISID.git&quot;,
-    &quot;accountId&quot;: &quot;9ab8cdd0-3b0a-4ed8-8ad9-bbe6a07b8624&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/LEI-122667/PISID.git",
+    "accountId": "22e58010-2f81-46fe-8995-13a506227a4e"
   }
-}</component>
+}]]></component>
   <component name="ProjectCodeStyleSettingsMigration">
     <option name="version" value="2" />
   </component>
@@ -61,6 +61,8 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
@@ -75,6 +77,11 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/scripts/mqttToMySql" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
       <deployment type="docker-compose.yml">
@@ -82,18 +89,11 @@
       </deployment>
       <method v="2" />
     </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Docker.docker-compose.yaml: Compose Deployment" />
-        <item itemvalue="Docker.docker-compose.yaml: Compose Deployment" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.26830.84" />
-        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-IU-252.26830.84" />
+        <option value="bundled-python-sdk-b63d5a1f7c97-b61e75351b1f-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-261.22158.340" />
       </set>
     </attachedChunks>
   </component>
@@ -107,6 +107,7 @@
       <workItem from="1773695173422" duration="1327000" />
       <workItem from="1773709439261" duration="2371000" />
       <workItem from="1773711839026" duration="620000" />
+      <workItem from="1777298380633" duration="3581000" />
     </task>
     <task id="LOCAL-00001" summary="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even">
       <option name="closed" value="true" />
