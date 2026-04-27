@@ -1,0 +1,18 @@
+DELIMITER $$
+
+CREATE PROCEDURE Remover_Utilizador(
+    IN p_IDUtilizador INT
+)
+BEGIN
+    -- Check if user exists
+    IF NOT EXISTS (SELECT 1 FROM Utilizador WHERE IDUtilizador = p_IDUtilizador) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Utilizador não encontrado';
+    END IF;
+
+    DELETE FROM Utilizador
+    WHERE IDUtilizador = p_IDUtilizador;
+
+END$$
+
+DELIMITER ;
