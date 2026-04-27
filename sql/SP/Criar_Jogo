@@ -1,0 +1,29 @@
+DELIMITER $$
+
+CREATE PROCEDURE Criar_Jogo(
+    IN p_Descricao      TEXT,
+    IN p_Equipa         INT,
+    IN p_DataHoraInicio TIMESTAMP,
+    IN p_Pontuacao      INT,
+    IN p_ArCondicionado BOOLEAN
+)
+BEGIN
+    -- Check no active simulation already exists
+    IF EXISTS (SELECT 1 FROM Simulacao WHERE Ativo = TRUE) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Já existe um jogo ativo, não é possível criar outro';
+    END IF;
+
+    INSERT INTO Simulacao (Descricao, Equipa, DataHoraInicio, Pontuacao, ArCondicionado, Ativo)
+    VALUES (
+        p_Descricao,
+        p_Equipa,
+        COALESCE(p_DataHoraInicio, CURRENT_TIMESTAMP),
+        COALESCE(p_Pontuacao, 0),
+        COALESCE(p_ArCondicionado, FALSE),
+        TRUE
+    );
+
+END$$
+
+DELIMITER ;
