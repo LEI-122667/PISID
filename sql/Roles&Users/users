@@ -1,0 +1,35 @@
+-- ─────────────────────────────────────────────
+-- USERS
+-- ─────────────────────────────────────────────
+
+CREATE USER 'admin_user'@'localhost'        IDENTIFIED BY 'admin';
+CREATE USER 'utilizador_user'@'localhost'   IDENTIFIED BY 'utilizador';
+CREATE USER 'android_user'@'localhost'      IDENTIFIED BY 'android';
+CREATE USER 'agente_user'@'localhost'       IDENTIFIED BY 'agente';
+CREATE USER 'script_som'@'localhost'        IDENTIFIED BY 'som';
+CREATE USER 'script_temperatura'@'localhost' IDENTIFIED BY 'temp';
+CREATE USER 'script_movimento'@'localhost'  IDENTIFIED BY 'mov';
+
+-- ─────────────────────────────────────────────
+-- ASSIGN ROLES
+-- ─────────────────────────────────────────────
+
+GRANT 'Admin'           TO 'admin_user'@'localhost';
+GRANT 'Utilizador'      TO 'utilizador_user'@'localhost';
+GRANT 'Android'         TO 'android_user'@'localhost';
+GRANT 'Agente'          TO 'agente_user'@'localhost';
+GRANT 'ScriptSom'       TO 'script_som'@'localhost';
+GRANT 'ScriptTemperatura' TO 'script_temperatura'@'localhost';
+GRANT 'ScriptMovimento' TO 'script_movimento'@'localhost';
+
+-- ─────────────────────────────────────────────
+-- SET DEFAULT ROLES (active on login)
+-- ─────────────────────────────────────────────
+
+SET DEFAULT ROLE 'Admin'            TO 'admin_user'@'localhost';
+SET DEFAULT ROLE 'Utilizador'       TO 'utilizador_user'@'localhost';
+SET DEFAULT ROLE 'Android'          TO 'android_user'@'localhost';
+SET DEFAULT ROLE 'Agente'           TO 'agente_user'@'localhost';
+SET DEFAULT ROLE 'ScriptSom'        TO 'script_som'@'localhost';
+SET DEFAULT ROLE 'ScriptTemperatura' TO 'script_temperatura'@'localhost';
+SET DEFAULT ROLE 'ScriptMovimento'  TO 'script_movimento'@'localhost';

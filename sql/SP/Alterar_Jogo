@@ -1,0 +1,60 @@
+DELIMITER $$
+
+CREATE PROCEDURE Alterar_Jogo(
+    IN p_IDSimulacao    INT,
+    IN p_Descricao      TEXT,
+    IN p_Equipa         INT,
+    IN p_DataHoraInicio TIMESTAMP,
+    IN p_Pontuacao      INT,
+    IN p_ArCondicionado BOOLEAN
+)
+BEGIN
+    DECLARE v_Equipa    INT;
+    DECLARE v_Ativo     BOOLEAN;
+    DECLARE v_EquipaUtilizador INT;
+
+    -- Check simulation exists
+    IF NOT EXISTS (SELECT 1 FROM Simulacao WHERE IDSimulacao = p_IDSimulacao) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Simulação não encontrada';
+    END IF;
+
+    -- Get simulation data
+    SELECT Equipa, Ativo INTO v_Equipa, v_Ativo
+    FROM Simulacao
+    WHERE IDSimulacao = p_IDSimulacao;
+
+    -- Cannot alter an active simulation
+    IF v_Ativo = TRUE THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Não é possível alterar uma simulação ativa';
+    END IF;
+
+    -- Get the calling user's team
+    SELECT Equipa INTO v_EquipaUtilizador
+    FROM Utilizador
+    WHERE Email = SUBSTRING_INDEX(USER(), '@', 1);
+
+    IF v_EquipaUtilizador IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Utilizador não encontrado';
+    END IF;
+
+    -- Check the simulation belongs to the calling user's team
+    IF v_Equipa != v_EquipaUtilizador THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Não tem permissão para alterar esta simulação';
+    END IF;
+
+    UPDATE Simulacao
+    SET
+        Descricao      = COALESCE(p_Descricao,      Descricao),
+        Equipa         = COALESCE(p_Equipa,          Equipa),
+        DataHoraInicio = COALESCE(p_DataHoraInicio,  DataHoraInicio),
+        Pontuacao      = COALESCE(p_Pontuacao,        Pontuacao),
+        ArCondicionado = COALESCE(p_ArCondicionado,   ArCondicionado)
+    WHERE IDSimulacao = p_IDSimulacao;
+
+END$$
+
+DELIMITER ;

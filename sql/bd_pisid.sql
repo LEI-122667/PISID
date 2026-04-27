@@ -7,7 +7,7 @@ USE bd_pisid;
 CREATE TABLE Simulacao (
     IDSimulacao    INT            AUTO_INCREMENT PRIMARY KEY,
     Descricao      TEXT,
-    Equipa         INT            UNIQUE, -- Added UNIQUE so Utilizador can reference it
+    Equipa         INT, -- Added UNIQUE so Utilizador can reference it
     DataHoraInicio TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
     Pontuacao      INT            DEFAULT 0,
     ArCondicionado BOOLEAN        DEFAULT FALSE,
@@ -24,10 +24,7 @@ CREATE TABLE Utilizador (
     Tipo           ENUM('Admin','Criador','Leitor') NOT NULL,
     Email          VARCHAR(50)    UNIQUE,
     DataNascimento DATE,
-    Equipa         INT,           -- References Simulacao(Equipa)
-    CONSTRAINT fk_utilizador_simulacao
-        FOREIGN KEY (Equipa) REFERENCES Simulacao(Equipa)
-        ON UPDATE CASCADE ON DELETE SET NULL
+    Equipa         INT           -- References Simulacao(Equipa)
 );
 
 -- ─────────────────────────────────────────────

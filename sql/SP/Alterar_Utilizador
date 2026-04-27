@@ -1,0 +1,42 @@
+DELIMITER $$
+
+CREATE PROCEDURE Alterar_Utilizador(
+    IN p_Nome           VARCHAR(100),
+    IN p_Telemovel      VARCHAR(12),
+    IN p_Email          VARCHAR(50),
+    IN p_DataNascimento DATE
+)
+BEGIN
+    DECLARE v_IDUtilizador INT;
+
+    -- Get the ID of whoever is calling this SP based on their MySQL login email
+    SELECT IDUtilizador INTO v_IDUtilizador
+    FROM Utilizador
+    WHERE Email = SUBSTRING_INDEX(USER(), '@', 1);
+
+    -- Check the calling user was found in the table
+    IF v_IDUtilizador IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Utilizador não encontrado';
+    END IF;
+
+    -- If trying to change email, check it isnt already taken by someone else
+    IF p_Email IS NOT NULL AND EXISTS (
+        SELECT 1 FROM Utilizador 
+        WHERE Email = p_Email AND IDUtilizador != v_IDUtilizador
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Email já está em uso';
+    END IF;
+
+    UPDATE Utilizador
+    SET
+        Nome           = COALESCE(p_Nome,           Nome),
+        Telemovel      = COALESCE(p_Telemovel,      Telemovel),
+        Email          = COALESCE(p_Email,          Email),
+        DataNascimento = COALESCE(p_DataNascimento, DataNascimento)
+    WHERE IDUtilizador = v_IDUtilizador;
+
+END$$
+
+DELIMITER ;
