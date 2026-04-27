@@ -25,9 +25,6 @@ CREATE TABLE Utilizador (
     Email          VARCHAR(50)    UNIQUE,
     DataNascimento DATE,
     Equipa         INT,           -- References Simulacao(Equipa)
-    CONSTRAINT fk_utilizador_simulacao
-        FOREIGN KEY (Equipa) REFERENCES Simulacao(Equipa)
-        ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 -- ─────────────────────────────────────────────
