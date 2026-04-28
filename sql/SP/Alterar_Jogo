@@ -33,7 +33,7 @@ BEGIN
     -- Get the calling user's team
     SELECT Equipa INTO v_EquipaUtilizador
     FROM Utilizador
-    WHERE Email = SUBSTRING_INDEX(USER(), '@', 1);
+    WHERE Email = REGEXP_REPLACE(USER(), '@[^@]+$', '');
 
     IF v_EquipaUtilizador IS NULL THEN
         SIGNAL SQLSTATE '45000'
