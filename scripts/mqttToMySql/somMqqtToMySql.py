@@ -12,8 +12,8 @@ database = "bd_pisid"
 # Configurações do MQTT
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
-MQTT_TOPIC = "pisid_grupo2_sensor_ruido"
-MQTT_TOPIC_FEEDBACK = "pisid_grupo2_feedbackSql"
+MQTT_TOPIC = "pisid_2_som"
+MQTT_TOPIC_FEEDBACK = "pisid_2_feedBack_som"
 
 # Conexão à BD
 try:
@@ -55,28 +55,28 @@ def on_message(client, userdata, msg):
         cursor = connection.cursor(dictionary=True)
 
         # Mapeamento de campos baseado no JSON enviado pelo script do MongoDB
-        # Nota: O Mongo envia "_id" (como string) e "Sound"
+        # Nota: O Mongo envia "idIncremental" (como string) e "Sound"
         args = (
-            payload.get("_id"),     # ID vindo do MongoDB
-            payload.get("Date"),    # Campo de data (garante que existe no Mongo)
+            payload.get("idIncremental"),     # ID vindo do MongoDB
+            payload.get("Hour"),    # Campo de data (garante que existe no Mongo)
             payload.get("Sound")    # Valor do ruído em dB
         )
 
         # Executa a Stored Procedure para inserir medição de ruído
         # Substitui "Inserir_Ruido" pelo nome exato da tua SP na BD
-        cursor.callproc("Inserir_Ruido", args)
+        cursor.callproc("Inserir_Som", args)
 
         # Capturar o resultado (Result) devolvido pela SP
         result_value = 0
         for result in cursor.stored_results():
             row = result.fetchone()
-            if row and 'Result' in row:
-                result_value = row['Result']
+            if row and 'feedBack' in row:
+                result_value = row['feedBack']
 
         cursor.close()
 
         # Atualiza o objeto para o feedback
-        payload["Result"] = result_value
+        payload["feedBack"] = result_value
 
         # Envia feedback para o tópico central
         feedback_payload = json.dumps(payload)

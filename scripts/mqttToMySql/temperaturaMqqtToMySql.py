@@ -12,8 +12,8 @@ database = "bd_pisid"
 # Configurações do MQTT
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
-MQTT_TOPIC = "pisid_grupo2_sensor_temperatura"  # Tópico específico
-MQTT_TOPIC_FEEDBACK = "pisid_grupo2_feedbackSql"
+MQTT_TOPIC = "pisid_2_temp"
+MQTT_TOPIC_FEEDBACK = "pisid_2_feedBack_temp"
 
 # Conexão à BD
 try:
@@ -57,8 +57,8 @@ def on_message(client, userdata, msg):
         # Mapeamento de campos baseado no JSON do MongoDB (payload_doc)
         # Adaptado para a Stored Procedure de Temperatura (ajusta o nome se necessário)
         args = (
-            payload.get("_id"),          # MongoId (já convertido para string no script de envio)
-            payload.get("Date"),         # Hora
+            payload.get("idIncremental"),          # MongoId (já convertido para string no script de envio)
+            payload.get("Hour"),         # Hora
             payload.get("Temperature")   # Valor da Temperatura
         )
 
@@ -70,13 +70,13 @@ def on_message(client, userdata, msg):
         result_value = 0
         for result in cursor.stored_results():
             row = result.fetchone()
-            if row and 'Result' in row:
-                result_value = row['Result']
+            if row and 'feedBack' in row:
+                result_value = row['feedBack']
 
         cursor.close()
 
         # Atualiza o objeto original com o resultado do SP para feedback
-        payload["Result"] = result_value
+        payload["feedBack"] = result_value
 
         # Envia a mensagem para o tópico de feedback
         feedback_payload = json.dumps(payload)
