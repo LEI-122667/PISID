@@ -12,8 +12,8 @@ database="bd_pisid"
 #Configurações do MQTT
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
-MQTT_TOPIC = "pisid_grupo2_sensor_movimento"
-MQTT_TOPIC_FEEDBACK = "pisid_grupo2_feedbackSql"
+MQTT_TOPIC = "pisid_2_moves"
+MQTT_TOPIC_FEEDBACK = "pisid_2_feedBack_moves"
 
 #Conexao à BD
 try:
@@ -57,10 +57,10 @@ def on_message(client, userdata, msg):
 
         #Localiza os campos do JSON para os args da BD
         agrs = (
-            payload.get("MongoId"),
-            payload.get("Hora"),
-            payload.get("SalaOrigem"),
-            payload.get("SalaDestino"),
+            payload.get("idIncremental"),
+            payload.get("Hour"),
+            payload.get("RoomOrigin"),
+            payload.get("RoomDestiny"),
             payload.get("Marsami"),
             payload.get("Status")
         )
@@ -72,13 +72,13 @@ def on_message(client, userdata, msg):
         result_value = 0
         for result in cursor.stored_results():
             row = result.fetchone()
-            if row and 'Result' in row:
-                result_value = row['Result']
+            if row and 'feedBack' in row:
+                result_value = row['feedBack']
 
         cursor.close()
 
         #Atualiza o objeto original com o resultado do SP
-        payload["Status"] = result_value
+        payload["feedBack"] = result_value
 
         #Envia a mensagem para o tópico de feedback
         feedback_payload = json.dumps(payload)
