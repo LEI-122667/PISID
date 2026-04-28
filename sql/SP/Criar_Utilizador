@@ -46,14 +46,14 @@ BEGIN
     DEALLOCATE PREPARE stmt;
 
     SET @sql_grant = CONCAT(
-        'GRANT ''', v_Role, ''' TO ''', p_Email, '''@''%'''
+        'GRANT `', v_Role, '` TO ''', p_Email, '''@''%'''
     );
     PREPARE stmt FROM @sql_grant;
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
 
     SET @sql_default = CONCAT(
-        'SET DEFAULT ROLE ''', v_Role, ''' TO ''', p_Email, '''@''%'''
+        'SET DEFAULT ROLE `', v_Role, '` TO ''', p_Email, '''@''%'''
     );
     PREPARE stmt FROM @sql_default;
     EXECUTE stmt;
