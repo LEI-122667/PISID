@@ -2,28 +2,28 @@ DELIMITER $$
 
 CREATE PROCEDURE Criar_Utilizador(
     IN p_Nome           VARCHAR(100),
-    IN p_Telemovel      VARCHAR(12),
     IN p_Tipo           ENUM('Admin','Criador','Leitor'),
-    IN p_Email          VARCHAR(50),
+    IN p_Email          VARCHAR(150),
+    IN p_Telemovel      VARCHAR(20),
     IN p_DataNascimento DATE,
-    IN p_Equipa         INT
+    IN p_Equipa         INT,
+    IN p_Password       VARCHAR(100)
 )
 BEGIN
+    DECLARE v_Role VARCHAR(50);
+
     IF p_Nome IS NULL OR TRIM(p_Nome) = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Nome é obrigatório';
     END IF;
-
     IF p_Tipo IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Tipo é obrigatório';
     END IF;
-
     IF p_Email IS NULL OR TRIM(p_Email) = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email é obrigatório';
     END IF;
-
     IF EXISTS (SELECT 1 FROM Utilizador WHERE Email = p_Email) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email já está em uso';
@@ -31,6 +31,33 @@ BEGIN
 
     INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa)
     VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa);
+
+    IF p_Tipo = 'Admin' THEN
+        SET v_Role = 'Admin';
+    ELSE
+        SET v_Role = 'Utilizador';
+    END IF;
+
+    SET @sql_create = CONCAT(
+        'CREATE USER ''', p_Email, '''@''%'' IDENTIFIED BY ''', p_Password, ''''
+    );
+    PREPARE stmt FROM @sql_create;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_grant = CONCAT(
+        'GRANT `', v_Role, '` TO ''', p_Email, '''@''%'''
+    );
+    PREPARE stmt FROM @sql_grant;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_default = CONCAT(
+        'SET DEFAULT ROLE `', v_Role, '` TO ''', p_Email, '''@''%'''
+    );
+    PREPARE stmt FROM @sql_default;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
 
 END$$
 
