@@ -27,6 +27,7 @@ GRANT EXECUTE ON PROCEDURE bd_pisid.Alterar_Utilizador  TO 'Admin';
 GRANT EXECUTE ON PROCEDURE bd_pisid.Alterar_Utilizador  TO 'Utilizador';
 GRANT EXECUTE ON PROCEDURE bd_pisid.Criar_Jogo          TO 'Utilizador';
 GRANT EXECUTE ON PROCEDURE bd_pisid.Alterar_Jogo        TO 'Utilizador';
+GRANT EXECUTE ON PROCEDURE bd_pisid.Ler_Leaderboard     TO 'Utilizador';
 
 -- ─────────────────────────────────────────────
 -- Android
