@@ -68,3 +68,4 @@ for row in records:
     cursor_mysql.execute(sql_insert_query, record_tuple)
     connection.commit()
     print("Record inserted successfully into SetupMaze table")
+
