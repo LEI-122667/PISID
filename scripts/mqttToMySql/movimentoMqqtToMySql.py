@@ -4,10 +4,10 @@ from mysql.connector import Error
 import json
 
 #Configurações do MySql
-usermysql="root"
-passmysql="root"
+usermysql="script_movimento"
+passmysql="mov"
 hostmysql="localhost"
-database="pisid_db"
+database="bd_pisid"
 
 #Configurações do MQTT
 MQTT_BROKER = "broker.hivemq.com"
@@ -90,9 +90,9 @@ def on_message(client, userdata, msg):
         print(f"❌ MQTT: Erro ao processar mensagem: {e}")
 
 #Configuração do cliente MQTT e loop de escuta
-    mqtt_client = mqtt.Client(transport="tcp")
-    mqtt_client.on_connect = on_connect
-    mqtt_client.on_message = on_message
+mqtt_client = mqtt.Client(transport="tcp")
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
 
 try:
     mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
