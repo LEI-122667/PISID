@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import mysql.connector
 from mysql.connector import Error
 import json
+from datetime import datetime
 
 # Configurações do MySql (Usando o utilizador específico para o script de som)
 usermysql = "script_som"
@@ -30,6 +31,23 @@ except Error as e:
     print("❌ MySQL: Erro ao conectar:", e)
     exit(1)
 
+# ✅ Valida e converte o datetime — retorna None se inválido
+def parse_datetime(value):
+    if value is None:
+        return None
+    formats = [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d"
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    return None
+
 # Conexão ao MQTT
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -47,6 +65,18 @@ def on_message(client, userdata, msg):
         payload = json.loads(raw_payload)
         print(f"✉️ MQTT: Mensagem Recebida {payload}")
 
+        # Validar o datetime antes de enviar para a SP
+        hora = parse_datetime(payload.get("Hour"))
+
+        # Se o datetime for inválido, envia -1 para feedback imediatamente
+        if hora is None:
+            print(f"⚠️ MQTT: Datetime inválido '{payload.get('Hour')}' — a enviar feedBack -1")
+            payload["feedBack"] = -1
+            feedback_payload = json.dumps(payload)
+            client.publish(MQTT_TOPIC_FEEDBACK, feedback_payload)
+            print(f"✉️ MQTT: Feedback enviado ({MQTT_TOPIC_FEEDBACK}): {feedback_payload}")
+            return
+
         # Garantir a conexão à BD (Caso o MySQL feche a conexão por inatividade)
         if not connection.is_connected():
             connection.ping(reconnect=True, attempts=3, delay=2)
@@ -54,24 +84,23 @@ def on_message(client, userdata, msg):
         # O cursor é o "navegador" que executa os comandos na BD
         cursor = connection.cursor(dictionary=True)
 
-        # Mapeamento de campos baseado no JSON enviado pelo script do MongoDB
-        # Nota: O Mongo envia "idIncremental" (como string) e "Sound"
         args = (
-            payload.get("idIncremental"),     # ID vindo do MongoDB
-            payload.get("Hour"),    # Campo de data (garante que existe no Mongo)
-            payload.get("Sound")    # Valor do ruído em dB
+            payload.get("idIncremental"),   # ID vindo do MongoDB
+            hora,                           # Hora validada
+            payload.get("Sound")            # Valor do ruído em dB
         )
 
+        print(f"🔍 Args enviados para SP: {args}")
+
         # Executa a Stored Procedure para inserir medição de ruído
-        # Substitui "Inserir_Ruido" pelo nome exato da tua SP na BD
         cursor.callproc("Inserir_Som", args)
 
         # Capturar o resultado (Result) devolvido pela SP
         result_value = 0
         for result in cursor.stored_results():
             row = result.fetchone()
-            if row and 'feedBack' in row:
-                result_value = row['feedBack']
+            if row and 'Result' in row:
+                result_value = row['Result']
 
         cursor.close()
 

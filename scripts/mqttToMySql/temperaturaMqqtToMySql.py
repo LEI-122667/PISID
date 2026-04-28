@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import mysql.connector
 from mysql.connector import Error
 import json
+from datetime import datetime
 
 # Configurações do MySql (Usando o utilizador específico para temperatura)
 usermysql = "script_temperatura"
@@ -30,6 +31,23 @@ except Error as e:
     print(f"❌ MySQL: Erro ao conectar: {e}")
     exit(1)
 
+# Valida e converte o datetime — retorna None se inválido
+def parse_datetime(value):
+    if value is None:
+        return None
+    formats = [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d"
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    return None
+
 # Conexão ao MQTT
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -47,6 +65,18 @@ def on_message(client, userdata, msg):
         payload = json.loads(raw_payload)
         print(f"✉️ MQTT: Mensagem Recebida {payload}")
 
+        # Validar o datetime antes de enviar para a SP
+        hora = parse_datetime(payload.get("Hour"))
+
+        #Se o datetime for inválido, envia -1 para feedback imediatamente
+        if hora is None:
+            print(f"⚠️ MQTT: Datetime inválido '{payload.get('Hour')}' — a enviar feedBack -1")
+            payload["feedBack"] = -1
+            feedback_payload = json.dumps(payload)
+            client.publish(MQTT_TOPIC_FEEDBACK, feedback_payload)
+            print(f"✉️ MQTT: Feedback enviado ({MQTT_TOPIC_FEEDBACK}): {feedback_payload}")
+            return  # Para aqui, não chama a SP
+
         # O ping garante que se a ligação caiu, ela é restabelecida antes de tentar usar o cursor.
         if not connection.is_connected():
             connection.ping(reconnect=True, attempts=3, delay=2)
@@ -54,24 +84,22 @@ def on_message(client, userdata, msg):
         # Usamos dictionary=True para que os resultados venham como dicionários (ex: row['Result']).
         cursor = connection.cursor(dictionary=True)
 
-        # Mapeamento de campos baseado no JSON do MongoDB (payload_doc)
-        # Adaptado para a Stored Procedure de Temperatura (ajusta o nome se necessário)
         args = (
-            payload.get("idIncremental"),          # MongoId (já convertido para string no script de envio)
-            payload.get("Hour"),         # Hora
-            payload.get("Temperature")   # Valor da Temperatura
+            payload.get("idIncremental"),   # MongoId
+            hora,                           # Hora validada
+            payload.get("Temperature")      # Valor da Temperatura
         )
 
-        # Executa o Stored Procedure (Certifica-te que o nome está correto na tua BD)
-        # Se a SP for Inserir_Medicao_Temperatura(id, data, valor)
+        print(f"🔍 Args enviados para SP: {args}")
+
         cursor.callproc("Inserir_Temperatura", args)
 
         # Capturar o resultado do SP
         result_value = 0
         for result in cursor.stored_results():
             row = result.fetchone()
-            if row and 'feedBack' in row:
-                result_value = row['feedBack']
+            if row and 'Result' in row:
+                result_value = row['Result']
 
         cursor.close()
 
@@ -87,7 +115,7 @@ def on_message(client, userdata, msg):
         print(f"❌ MQTT: Erro ao processar mensagem: {e}")
 
 # Configuração do cliente MQTT
-mqtt_client = mqtt.Client() # Removido transport="tcp" por ser o padrão e evitar avisos
+mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 

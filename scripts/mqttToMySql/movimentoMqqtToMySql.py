@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import paho.mqtt.client as mqtt
 import mysql.connector
 from mysql.connector import Error
@@ -39,6 +41,23 @@ def on_connect(client, userdata, flags, rc):
     else:
         print(f"❌ MQTT: Erro código {rc}")
 
+# Valida e converte o datetime — retorna None se inválido
+def parse_datetime(value):
+    if value is None:
+        return None
+    formats = [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d"
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    return None
+
 #Função de que recebe a mensagem do MQTT e Executa SP do MySql
 def on_message(client, userdata, msg):
     try:
@@ -46,6 +65,18 @@ def on_message(client, userdata, msg):
         raw_payload = msg.payload.decode().replace("'", '"')
         payload = json.loads(raw_payload)
         print(f"✉️ MQTT: Mensagem Recebida {payload}")
+
+        # Validar o datetime antes de enviar para a SP
+        hora = parse_datetime(payload.get("Hour"))
+
+        # Se o datetime for inválido, envia -1 para feedback imediatamente
+        if hora is None:
+            print(f"⚠️ MQTT: Datetime inválido '{payload.get('Hour')}' — a enviar feedBack -1")
+            payload["feedBack"] = -1
+            feedback_payload = json.dumps(payload)
+            client.publish(MQTT_TOPIC_FEEDBACK, feedback_payload)
+            print(f"✉️ MQTT: Feedback enviado ({MQTT_TOPIC_FEEDBACK}): {feedback_payload}")
+            return
 
         #TODO porque?
         #Garantir a conexão à BD
@@ -56,24 +87,25 @@ def on_message(client, userdata, msg):
         cursor = connection.cursor(dictionary=True)
 
         #Localiza os campos do JSON para os args da BD
-        agrs = (
+        args = (
             payload.get("idIncremental"),
-            payload.get("Hour"),
+            hora,
             payload.get("RoomOrigin"),
             payload.get("RoomDestiny"),
             payload.get("Marsami"),
             payload.get("Status")
         )
 
+        print(f"🔍 Args enviados para SP: {args}")
         #Executa o Stored Procedure
-        cursor.callproc("Inserir_Movimento", agrs)
+        cursor.callproc("Inserir_Movimento", args)
 
         #Capturar o resultado do SP
         result_value = 0
         for result in cursor.stored_results():
             row = result.fetchone()
-            if row and 'feedBack' in row:
-                result_value = row['feedBack']
+            if row and 'Result' in row:
+                result_value = row['Result']
 
         cursor.close()
 
@@ -90,7 +122,7 @@ def on_message(client, userdata, msg):
         print(f"❌ MQTT: Erro ao processar mensagem: {e}")
 
 #Configuração do cliente MQTT e loop de escuta
-mqtt_client = mqtt.Client(transport="tcp")
+mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 
