@@ -51,6 +51,8 @@ def on_message(client, userdata, msg):
             # Converter a mensagem recebida para dicionário Python
             raw_payload = msg.payload.decode().replace("'", '"')
             payload = json.loads(raw_payload)
+            print(f"\n📥 Mensagem recebida no tópico: {msg.topic}")
+
 
             topico = msg.topic
 
@@ -78,8 +80,10 @@ def on_message(client, userdata, msg):
                     {"idIncremental": payload['idIncremental']},
                     {"$set": {"inserted": True}}
                   )
+                 print(f"✅ Feedback positivo recebido para idIncremental {payload['idIncremental']} - Documento marcado como inserido.")
 
             if payload['feedBack'] == 0:
+                 print(f"⚠️ Feedback neutro recebido para idIncremental {payload['idIncremental']} - Nenhuma ação tomada.")
                  return
 
             if payload['feedBack'] == -1:
@@ -93,6 +97,7 @@ def on_message(client, userdata, msg):
                         db['outliers_DadosErrados_temperatura'].insert_one(doc)
                     elif tipo == "MOVIMENTO":
                         db['outliers_DadosErrados_movimento'].insert_one(doc)
+                    print(f"❌ Feedback negativo recebido para idIncremental {payload['idIncremental']} - Documento removido e movido para coleção de outliers.")
                         
         except Exception as e:
             print(f"Erro ao processar mensagem no tópico {msg.topic}: {e}")

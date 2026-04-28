@@ -3,11 +3,6 @@ import pymysql
 from mysql.connector import Error
 import mysql.connector as mariadb
 
-usermysql="root"
-passmysql="root"
-hostmysql="localhost"
-database="pisid_db"
-
 userMongo="root"
 passMongo="root"
 hostMongo="localhost"
@@ -87,6 +82,7 @@ for row in records:
     temperaturevarhightoleration = row['temperaturevarhightoleration']
     temperaturevarlowtoleration = row['temperaturevarlowtoleration']
 
+    
     setup_doc = {
         "numbermarsamis": numbermarsamis,
         "numberrooms": numberrooms,
@@ -122,9 +118,6 @@ for row in corredores:
         "origin": row['Rooma'],
         "destination": row['Roomb']
     }
-
-
-
     collectionCorredores.insert_one(corredor_doc)
     i += 1
 
