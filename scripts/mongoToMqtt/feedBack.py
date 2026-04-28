@@ -30,16 +30,17 @@ except Exception as e:
 # Configurações MQTT
 mqtt_broker = "broker.hivemq.com"
 mqtt_port = 1883
-topic = "pisid_2_feedBack"
+topics = ["pisid_2_feedBack_temp", "pisid_2_feedBack_som", "pisid_2_feedBack_moves"]
 
 def on_connect(client, userdata, flags, rc):
         if rc == 0:
             print(f"✅ MQTT: Ligado ao Broker {mqtt_broker}")
             try:
-                # O .strip() remove qualquer lixo invisível (espaços, tabs, \r)
-                filtro = topic.strip()
-                client.subscribe(filtro)
-                print(f"📡 Subscrito com sucesso em: {filtro}")
+                for topic in topics:
+                    # O .strip() remove qualquer lixo invisível (espaços, tabs, \r)
+                    filtro = topic.strip()
+                    client.subscribe(filtro)
+                    print(f"📡 Subscrito com sucesso em: {filtro}")
             except Exception as e:
                 print(f"❌ Erro ao subscrever a {topic}: {e}")
         else:
@@ -53,7 +54,7 @@ def on_message(client, userdata, msg):
 
             topico = msg.topic
 
-            if "sound" in topico:
+            if "som" in topico:
                 colecao = db['sensor_ruido']
                 tipo = "SOUND"
             elif "temp" in topico:
@@ -72,7 +73,7 @@ def on_message(client, userdata, msg):
                 print(f"⚠️ Payload sem feedBack: {payload}")
                 return
         
-            if payload['feedBack'] == 1:
+            if payload['feedBack'] == 1 or payload['feedBack'] == -2:
                  colecao.update_one(
                     {"idIncremental": payload['idIncremental']},
                     {"$set": {"inserted": True}}
