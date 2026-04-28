@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Implementacao do topico do movimeto do mqtt para o mysql">
-      <change beforePath="$PROJECT_DIR$/.idea/PISID.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PISID.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mqttToMySql/movimentoMqqtToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/mqttToMySql/movimentoMqqtToMySql.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sql/Roles&amp;Users/roles" beforeDir="false" afterPath="$PROJECT_DIR$/sql/Roles&amp;Users/roles.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sql/Roles&amp;Users/users" beforeDir="false" afterPath="$PROJECT_DIR$/sql/Roles&amp;Users/users.sql" afterDir="false" />
-    </list>
+    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Implementacao do topico do movimeto do mqtt para o mysql" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -38,12 +31,12 @@
     &quot;assignee&quot;: &quot;PedroAngelino&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/LEI-122667/PISID.git",
-    "accountId": "22e58010-2f81-46fe-8995-13a506227a4e"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/LEI-122667/PISID.git&quot;,
+    &quot;accountId&quot;: &quot;22e58010-2f81-46fe-8995-13a506227a4e&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectCodeStyleSettingsMigration">
     <option name="version" value="2" />
   </component>
@@ -68,7 +61,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "st3ps",
+    "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/home/st3ps/PycharmProjects/PISID/scripts/mqttToMySql",
