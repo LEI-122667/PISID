@@ -1,0 +1,20 @@
+DELIMITER $$
+
+CREATE TRIGGER Pontuacao_gatilho 
+BEFORE UPDATE ON OcupacaoLabirinto
+FOR EACH ROW
+BEGIN
+
+    IF NEW.Gatilho < OLD.Gatilho THEN
+    
+    	IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven THEN
+        	UPDATE Simulacao
+            SET Pontuacao = Pontuacao + 1
+            WHERE IDSimulacao = NEW.IDSimulacao;
+        END IF;
+        
+    END IF;
+
+END$$
+
+DELIMITER ;

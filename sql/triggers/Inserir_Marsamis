@@ -1,0 +1,30 @@
+DELIMITER $$
+
+CREATE TRIGGER Inserir_Marsamis 
+AFTER INSERT ON MedicoesPassagens
+FOR EACH ROW
+BEGIN
+
+	IF MOD(NEW.Marsami, 2) = 0 THEN
+        UPDATE ocupacaolabirinto
+        SET NumeroMarsamisEven = NumeroMarsamisEven + 1
+        WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaDestino;
+        
+        UPDATE ocupacaolabirinto
+        SET NumeroMarsamisEven = NumeroMarsamisEven - 1
+        WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaOrigem;
+        
+    ELSE
+    	UPDATE ocupacaolabirinto
+        SET NumeroMarsamisOdd = NumeroMarsamisOdd + 1
+        WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaDestino;
+        
+        UPDATE ocupacaolabirinto
+        SET NumeroMarsamisOdd = NumeroMarsamisOdd - 1
+        WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaOrigem;
+        
+    END IF;
+
+END$$
+
+DELIMITER ;

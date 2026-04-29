@@ -1,0 +1,42 @@
+DELIMITER $$
+
+CREATE TRIGGER Alerta_Som 
+AFTER INSERT ON Som
+FOR EACH ROW
+BEGIN
+
+    DECLARE alerta INT DEFAULT 0;
+    DECLARE limite DECIMAL(6,2) DEFAULT 0;
+    DECLARE normalNoise DECIMAL(6,2) DEFAULT 0;
+    DECLARE noiseTol DECIMAL(6,2) DEFAULT 0;
+    DECLARE corredoresAbertos INT DEFAULT 0;
+
+    SELECT COALESCE(alerta_som, 0)
+    INTO alerta
+    FROM configjogo
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+    
+    SELECT COALESCE(NormalNoise, 0), COALESCE(NoiseVarToleration, 0)
+    INTO normalNoise, noiseTol
+    FROM setupmaze
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+    
+    SET limite = normalNoise + noiseTol;
+    
+    SELECT COUNT(*)
+    INTO corredoresAbertos
+    FROM corridor
+    WHERE IDSimulacao = NEW.IDSimulacao AND Fechado = 0;
+    
+    IF NEW.Som >= (limite - alerta) AND corredoresAbertos > 0 THEN
+       
+        INSERT INTO mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        VALUES (NEW.IDSimulacao,'2', NEW.Som,'AtivacaoGatilho','Outlier no ruído',NEW.Hora);
+        
+    END IF;
+
+END$$
+
+DELIMITER ;

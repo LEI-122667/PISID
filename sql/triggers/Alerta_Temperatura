@@ -1,0 +1,51 @@
+DELIMITER $$
+
+CREATE TRIGGER Alerta_Temperatura
+AFTER INSERT ON Temperatura
+FOR EACH ROW 
+BEGIN
+    DECLARE alertaSuperior INT;
+    DECLARE alertaInferior INT;
+    DECLARE limiteSuperior DECIMAL(6,2);
+    DECLARE limiteInferior DECIMAL(6,2);
+    DECLARE normalTemp DECIMAL(6,2);
+    DECLARE tempHighTol DECIMAL(6,2);
+    DECLARE tempLowTol DECIMAL(6,2);
+    DECLARE arcondicionado TINYINT;
+
+    -- Get alert thresholds
+    SELECT COALESCE(alerta_temperatura_high, 0), COALESCE(alerta_temperatura_low, 0)
+    INTO alertaSuperior, alertaInferior
+    FROM configjogo
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+    
+    -- Get baseline maze setup
+    SELECT COALESCE(NormalTemperature, 0), COALESCE(TemperatureVarHighToleration, 0), COALESCE(TemperatureVarLowToleration, 0)
+    INTO normalTemp, tempHighTol, tempLowTol
+    FROM setupmaze
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+    
+    -- Calculate limits
+    SET limiteSuperior = normalTemp + tempHighTol;
+    SET limiteInferior = normalTemp - tempLowTol;
+    
+    -- Check AC status
+    SELECT COALESCE(ArCondicionado, 0)
+    INTO arcondicionado
+    FROM simulacao
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+    
+    -- Logic: Trigger alert if temperature is an outlier and AC is OFF (0)
+    IF (NEW.Temperatura >= (limiteSuperior - alertaSuperior) OR NEW.Temperatura <= (limiteInferior + alertaInferior)) AND arcondicionado = 0 THEN
+    
+        INSERT INTO mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'AtivacaoGatilho', 'Outlier na temperatura', NEW.Hora);
+        
+    END IF;
+
+END$$
+
+DELIMITER ;
