@@ -1,7 +1,7 @@
 DELIMITER $$
 
 CREATE TRIGGER Pontuacao_gatilho 
-BEFORE UPDATE ON ocupacaolabirinto
+BEFORE UPDATE ON OcupacaoLabirinto
 FOR EACH ROW
 BEGIN
 
