@@ -152,36 +152,8 @@ CREATE TABLE ConfigJogo (
     alerta_som                   INT            NOT NULL COMMENT 'Sound level that triggers an alert',
     time_fecharcorredores        INT            NOT NULL COMMENT 'Seconds until a closed corridor reopens',
     ruidolimite_fecharcorredores DECIMAL(5,2)   NOT NULL COMMENT 'Fraction (%) of the total sound limit that triggers corridor closure',
+    amount_of_gatilhos           INT            NOT NULL COMMENT 'Amount of shots to corridor for movement alert',
     CONSTRAINT fk_configjogo_simulacao
         FOREIGN KEY (IDSimulacao) REFERENCES Simulacao(IDSimulacao)
         ON UPDATE CASCADE ON DELETE CASCADE
 );
-
--- ─────────────────────────────────────────────
--- TRIGGERS
--- ─────────────────────────────────────────────
-DELIMITER $$
-
--- Enforce only one active simulation: When a new simulation is set to 'Ativo' = TRUE, 
--- set all others to FALSE. Note: MySQL triggers cannot update the same table easily 
--- without specific logic, so we use a 'BEFORE INSERT' to ensure consistency.
-
-CREATE TRIGGER tr_OnlyOneActive_Insert
-BEFORE INSERT ON Simulacao
-FOR EACH ROW
-BEGIN
-    IF NEW.Ativo = TRUE THEN
-        UPDATE Simulacao SET Ativo = FALSE WHERE Ativo = TRUE;
-    END IF;
-END$$
-
-CREATE TRIGGER tr_OnlyOneActive_Update
-BEFORE UPDATE ON Simulacao
-FOR EACH ROW
-BEGIN
-    IF NEW.Ativo = TRUE AND OLD.Ativo = FALSE THEN
-        UPDATE Simulacao SET Ativo = FALSE WHERE Ativo = TRUE;
-    END IF;
-END$$
-
-DELIMITER ;

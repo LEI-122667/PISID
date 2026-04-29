@@ -16,7 +16,7 @@ collection_setup_name = "setup"
 collection_corredores_name = "corredores"
 
 # --- 1. Capture Arguments from PHP ---
-# Expected order: IDSimulacao, outliers_temp, outliers_som, alerta_temp_h, alerta_temp_l, alerta_som, time_fechar, ruido_limite
+# Expected order: IDSimulacao, outliers_temp, outliers_som, alerta_temp_h, alerta_temp_l, alerta_som, time_fechar, ruido_limite, amount_of_gatilhos
 try:
     php_vars = {
         "id_sim": sys.argv[1],
@@ -26,10 +26,11 @@ try:
         "al_temp_l": sys.argv[5],
         "al_som": sys.argv[6],
         "t_fechar": sys.argv[7],
-        "ruido_lim": sys.argv[8]
+        "ruido_lim": sys.argv[8],
+        "amt_gatilhos": sys.argv[9]
     }
 except IndexError:
-    print("Error: Missing arguments from PHP. Script requires 8 arguments.")
+    print("Error: Missing arguments from PHP. Script requires 9 arguments.")
     sys.exit(1)
 
 try:
@@ -114,13 +115,13 @@ try:
     print("Inserting ConfigJogo...")
     sql_config = """INSERT INTO ConfigJogo
                     (IDSimulacao, outliers_temperatura, outliers_som, alerta_temperatura_high,
-                     alerta_temperatura_low, alerta_som, time_fecharcorredores, ruidolimite_fecharcorredores)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                     alerta_temperatura_low, alerta_som, time_fecharcorredores, ruidolimite_fecharcorredores, amount_of_gatilhos)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
 
     config_vals = (
         php_vars["id_sim"], php_vars["out_temp"], php_vars["out_som"],
         php_vars["al_temp_h"], php_vars["al_temp_l"], php_vars["al_som"],
-        php_vars["t_fechar"], php_vars["ruido_lim"]
+        php_vars["t_fechar"], php_vars["ruido_lim"], php_vars["amt_gatilhos"]
     )
     cursor_local.execute(sql_config, config_vals)
 

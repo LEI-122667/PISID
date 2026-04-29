@@ -632,8 +632,6 @@ BEGIN
     LIMIT 1;
 
     -- 4. PRÓXIMA MENSAGEM
-    SET v_CurrentId = p_LastId + 1;
-
     IF v_IDSimulacao IS NULL THEN
         -- Retorna -1: Não há jogo a decorrer
         SELECT -1 AS Result;
@@ -641,7 +639,8 @@ BEGIN
     ELSE
 		SELECT *
         FROM mensagens
-        WHERE ID = v_CurrentId AND IDSimulacao = v_IDSimulacao
+        WHERE ID > p_LastId AND IDSimulacao = v_IDSimulacao
+        ORDER BY ID ASC
         LIMIT 1;
     END IF;
 

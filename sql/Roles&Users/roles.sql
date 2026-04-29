@@ -43,6 +43,10 @@ GRANT SELECT ON bd_pisid.Som                TO 'Android';
 -- AgentSimulacao
 -- SP execution only
 -- ─────────────────────────────────────────────
+GRANT SELECT ON bd_pisid.ConfigJogo                 TO 'Agente';
+GRANT SELECT ON bd_pisid.Corridor                   TO 'Agente';
+GRANT SELECT ON bd_pisid.Som                        TO 'Agente';
+GRANT SELECT ON bd_pisid.SetupMaze                  TO 'Agente';
 GRANT EXECUTE ON PROCEDURE bd_pisid.Desligar_Ligar_ArCondicionado   TO 'Agente';
 GRANT EXECUTE ON PROCEDURE bd_pisid.Ativar_Gatilho                  TO 'Agente';
 GRANT EXECUTE ON PROCEDURE bd_pisid.Fechar_Abrir_Corredor           TO 'Agente';

@@ -19,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $al_temp_l = $_POST['alerta_temp_l'];
     $al_som = $_POST['alerta_som'];
 
+    $amt_gatilhos = $_POST['amt_gatilhos'];
+
     if ($_POST['fechar_por'] === 'tempo') {
         $t_fechar = $_POST['fechar_valor'];
         $r_limite = 0;
@@ -28,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
+        // 1. Criar o jogo na BD Local
         $pdo->beginTransaction();
 
         // Call the SP (which internally checks for active simulations)
@@ -38,7 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->commit();
 
-        // Execute python script
+        // 2. Iniciar a simulação no Windows em background (now we know it is safe)
+        $cmdMazerun = "start /B mazerun.exe 2 --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883";
+        pclose(popen($cmdMazerun, "r"));
+
+        // 3. Esperar 1 segundo para a simulação inserir tabelas na Nuvem
+        sleep(1);
+
+        // 4. Execute python script para sincronizar Nuvem -> DB Local e Mongo
         $cmd = escapeshellcmd("python ../scripts/nuvemToDBs/htmlNuvemToDatabases.py " .
             escapeshellarg($id_sim) . " " .
             escapeshellarg($out_temp) . " " .
@@ -47,7 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             escapeshellarg($al_temp_l) . " " .
             escapeshellarg($al_som) . " " .
             escapeshellarg($t_fechar) . " " .
-            escapeshellarg($r_limite));
+            escapeshellarg($r_limite) . " " .
+            escapeshellarg($amt_gatilhos));
 
         $output = shell_exec($cmd);
 
@@ -139,6 +150,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                             <input type="number" step="1" name="fechar_valor" id="fechar_valor" required value="10"
                                 placeholder="Valor em segundos (ex: 10)">
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade de Gatilhos (Movimento)</label>
+                            <input type="number" name="amt_gatilhos" required value="3">
                         </div>
                     </div>
                 </div>
