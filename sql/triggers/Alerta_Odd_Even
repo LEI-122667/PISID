@@ -1,7 +1,7 @@
 DELIMITER $$
 
 CREATE TRIGGER Alerta_Odd_Even 
-AFTER UPDATE ON ocupacaolabirinto
+AFTER UPDATE ON OcupacaoLabirinto
 FOR EACH ROW
 BEGIN
 
