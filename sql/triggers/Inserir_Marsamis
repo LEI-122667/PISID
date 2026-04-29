@@ -1,7 +1,7 @@
 DELIMITER $$
 
 CREATE TRIGGER Inserir_Marsamis 
-AFTER INSERT ON medicoespassagens
+AFTER INSERT ON MedicoesPassagens
 FOR EACH ROW
 BEGIN
 
