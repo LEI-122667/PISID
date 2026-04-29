@@ -1,0 +1,15 @@
+DELIMITER $$
+
+CREATE TRIGGER Alerta_Odd_Even 
+AFTER UPDATE ON ocupacaolabirinto
+FOR EACH ROW
+BEGIN
+
+    IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven THEN
+        INSERT INTO mensagens (IDSimulacao, Sala, TipoAlerta, Msg)
+        VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even');
+    END IF;
+
+END$$
+
+DELIMITER ;
