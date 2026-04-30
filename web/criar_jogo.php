@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             escapeshellarg($r_limite) . " " .
             escapeshellarg($amt_gatilhos));
 
-        $output = shell_exec($cmd);
+        $output = shell_exec($cmd) ?? '(sem output)';
 
         $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output);
 

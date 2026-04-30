@@ -31,24 +31,24 @@ class mongoToMqtt:
         self.topic = topic
         
         # Inicializar o cliente MQTT dentro do objeto
-        self.mqtt_client = mqtt.Client(transport="tcp")
+        self.mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, transport="tcp")
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_publish = self.on_publish_callback
         self.motivo_outlier = ""
 
-    def on_connect(self, client, userdata, flags, rc):
-        if rc == 0:
+    def on_connect(self, client, userdata, flags, reason_code, properties):
+        if reason_code == 0:
             print(f"✅ MQTT: Ligado ao Broker {self.mqtt_broker}")
         else:
-            print(f"MQTT: Erro código {rc}")
+            print(f"MQTT: Erro código {reason_code}")
 
-    def on_publish_callback(self, client, userdata, mid):
+    def on_publish_callback(self, client, userdata, mid, reason_code, properties):
         # Esta função é chamada internamente pela biblioteca após cada envio
         pass
 
     def connectToMongoDB(self):
         #URI com as credenciais root
-        uri = "mongodb://root:root@localhost:27017/"
+        uri = "mongodb://root:root@localhost:27017/?authSource=admin"
         timeout = 2000  # Tempo de espera - 2 segundos
         pisid = "pisid_maze"
 

@@ -3,7 +3,7 @@ import json
 import pymongo
 import paho.mqtt.client as mqtt
 
-uri = "mongodb://root:root@localhost:27017/"
+uri = "mongodb://root:root@localhost:27017/?authSource=admin"
 timeout = 2000  # Tempo de espera - 2 segundos
 collection_setup = "setup"
 collection_corredores = "corredores"
@@ -32,8 +32,8 @@ mqtt_broker = "broker.hivemq.com"
 mqtt_port = 1883
 topics = ["pisid_2_feedBack_temp", "pisid_2_feedBack_som", "pisid_2_feedBack_moves"]
 
-def on_connect(client, userdata, flags, rc):
-        if rc == 0:
+def on_connect(client, userdata, flags, reason_code, properties):
+        if reason_code == 0:
             print(f"✅ MQTT: Ligado ao Broker {mqtt_broker}")
             try:
                 for topic in topics:
@@ -44,7 +44,7 @@ def on_connect(client, userdata, flags, rc):
             except Exception as e:
                 print(f"❌ Erro ao subscrever a {topic}: {e}")
         else:
-            print(f"MQTT: Erro código {rc}")
+            print(f"MQTT: Erro código {reason_code}")
 
 def on_message(client, userdata, msg):
         try:
@@ -114,7 +114,7 @@ def connect():
         print("Conexão ao MongoDB fechada.")    
 
 # Inicializar o cliente MQTT dentro do objeto
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 

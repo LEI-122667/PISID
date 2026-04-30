@@ -1,5 +1,5 @@
 <?php
-$host = 'localhost';
+$host = 'mysql';
 $db   = 'bd_pisid';
 $user = 'root';
 $pass = 'root';

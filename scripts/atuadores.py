@@ -15,7 +15,7 @@ MYSQL_CONFIG = {
 }
 
 # --- Conexão MQTT ---
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.connect(MQTT_BROKER, 1883, 60)
 
 def enviar_comando(payload):

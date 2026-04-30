@@ -23,7 +23,7 @@ class simToMongoDB:
         self.topic = topic
         
         # Inicializar o cliente MQTT dentro do objeto
-        self.mqtt_client = mqtt.Client()
+        self.mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
 
@@ -31,7 +31,7 @@ class simToMongoDB:
     def connectToMongoDB(self):
 
         #URI com as credenciais root:root e porto 27017 (padrão do MongoDB).
-        uri = "mongodb://root:root@localhost:27017/"
+        uri = "mongodb://root:root@localhost:27017/?authSource=admin"
         timeout = 2000  # Tempo de espera - 2 segundos.
         pisid = "pisid_maze"
 
@@ -51,9 +51,9 @@ class simToMongoDB:
             print(f"Erro: {e}")
 
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, reason_code, properties):
 
-        if rc == 0:
+        if reason_code == 0:
             print(f"✅ MQTT: Ligado ao Broker {self.mqtt_broker}")
             try:
                 # O .strip() remove qualquer lixo invisível (espaços, tabs, \r)
@@ -63,7 +63,7 @@ class simToMongoDB:
             except Exception as e:
                 print(f"❌ Erro ao subscrever a {self.topic}: {e}")
         else:
-            print(f"MQTT: Erro código {rc}")
+            print(f"MQTT: Erro código {reason_code}")
 
     def on_message(self, client, userdata, msg):
         #Defini-se na classe filha, para assim processar os dados de forma diferente em função do tópico.

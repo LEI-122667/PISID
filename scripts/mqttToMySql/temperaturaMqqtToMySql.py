@@ -50,13 +50,13 @@ def parse_datetime(value):
     return None
 
 # Conexão ao MQTT
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
         print(f"✅ MQTT: Ligado ao Broker {MQTT_BROKER}")
         client.subscribe(MQTT_TOPIC)
         print(f"✅ MQTT: A escutar o tópico {MQTT_TOPIC}")
     else:
-        print(f"❌ MQTT: Erro código {rc}")
+        print(f"❌ MQTT: Erro código {reason_code}")
 
 # Função que recebe a mensagem do MQTT e Executa SP do MySql
 def on_message(client, userdata, msg):
@@ -116,7 +116,7 @@ def on_message(client, userdata, msg):
         print(f"❌ MQTT: Erro ao processar mensagem: {e}")
 
 # Configuração do cliente MQTT
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 

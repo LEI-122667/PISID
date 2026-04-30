@@ -37,5 +37,20 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    container_name: pisid_php
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - ./web:/var/www/html
+    depends_on:
+      - mysql
+    environment:
+      TZ: "Europe/Lisbon"
+
 volumes:
   mongo_data:

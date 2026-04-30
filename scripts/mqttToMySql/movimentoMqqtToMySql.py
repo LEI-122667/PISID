@@ -33,13 +33,13 @@ except Error as e:
     exit(1)
 
 #Conexao ao MQTT
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
         print(f"✅ MQTT: Ligado ao Broker {MQTT_BROKER}")
         client.subscribe(MQTT_TOPIC)
         print(f"✅ MQTT: A escutar o tópico {MQTT_TOPIC}")
     else:
-        print(f"❌ MQTT: Erro código {rc}")
+        print(f"❌ MQTT: Erro código {reason_code}")
 
 # Valida e converte o datetime — retorna None se inválido
 def parse_datetime(value):
@@ -123,7 +123,7 @@ def on_message(client, userdata, msg):
         print(f"❌ MQTT: Erro ao processar mensagem: {e}")
 
 #Configuração do cliente MQTT e loop de escuta
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 

@@ -2,13 +2,13 @@
 -- USERS
 -- ─────────────────────────────────────────────
 
-CREATE USER 'admin_user'@'%'        IDENTIFIED BY 'admin';
-CREATE USER 'utilizador_user'@'%'   IDENTIFIED BY 'utilizador';
-CREATE USER 'android_user'@'%'      IDENTIFIED BY 'android';
-CREATE USER 'agente_user'@'%'       IDENTIFIED BY 'agente';
-CREATE USER 'script_som'@'%'        IDENTIFIED BY 'som';
-CREATE USER 'script_temperatura'@'%' IDENTIFIED BY 'temp';
-CREATE USER 'script_movimento'@'%'  IDENTIFIED BY 'mov';
+CREATE USER IF NOT EXISTS 'admin_user'@'%'        IDENTIFIED BY 'admin';
+CREATE USER IF NOT EXISTS 'utilizador_user'@'%'   IDENTIFIED BY 'utilizador';
+CREATE USER IF NOT EXISTS 'android_user'@'%'      IDENTIFIED BY 'android';
+CREATE USER IF NOT EXISTS 'agente_user'@'%'       IDENTIFIED BY 'agente';
+CREATE USER IF NOT EXISTS 'script_som'@'%'        IDENTIFIED BY 'som';
+CREATE USER IF NOT EXISTS 'script_temperatura'@'%' IDENTIFIED BY 'temp';
+CREATE USER IF NOT EXISTS 'script_movimento'@'%'  IDENTIFIED BY 'mov';
 
 -- ─────────────────────────────────────────────
 -- ASSIGN ROLES
