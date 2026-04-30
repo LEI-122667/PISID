@@ -9,14 +9,33 @@ usermysql, passmysql, hostmysql, database = "root", "root", "localhost", "bd_pis
 # --- Configuration: MariaDB Cloud ---
 nuvemuser, nuvempass, nuvemhost, nuvemDb = "aluno", "aluno", "194.210.86.10", "maze"
 
-# --- Configuration: MongoDB ---
-uri = "mongodb://root:root@localhost:27017/"
+# --- Configuration: MongoDB Replica Set ---
+# Portas mapeadas no docker-compose
+MONGO_NODES = [27018, 27019, 27020]
 databaseMongo = "pisid_maze"
 collection_setup_name = "setup"
 collection_corredores_name = "corredores"
 
+def get_mongo_primary():
+    """Tenta encontrar o nó Primary no cluster de réplicas."""
+    for porta in MONGO_NODES:
+        try:
+            client = pymongo.MongoClient(
+                'localhost', 
+                porta, 
+                directConnection=True, 
+                serverSelectionTimeoutMS=2000
+            )
+            is_master = client.admin.command('ismaster')
+            if is_master.get('ismaster'):
+                print(f"✅ MongoDB Primary encontrado na porta {porta}.")
+                return client
+            client.close()
+        except Exception as e:
+            print(f"⚠️ Porta {porta} indisponível ou secundária.")
+    return None
+
 # --- 1. Capture Arguments from PHP ---
-# Expected order: IDSimulacao, outliers_temp, outliers_som, alerta_temp_h, alerta_temp_l, alerta_som, time_fechar, ruido_limite, amount_of_gatilhos
 try:
     php_vars = {
         "id_sim": sys.argv[1],
@@ -46,20 +65,21 @@ try:
     cursor_nuvem = conn_nuvem.cursor(dictionary=True)
     print("Connected to Cloud MariaDB.")
 
-    # MongoDB
-    client_mongo = pymongo.MongoClient(uri, serverSelectionTimeoutMS=2000)
-    client_mongo.server_info()  # Test connection
+    # MongoDB (Procura o Primary para permitir DROP e INSERT)
+    client_mongo = get_mongo_primary()
+    if not client_mongo:
+        raise Exception("Não foi possível encontrar um nó Primary no MongoDB Replica Set.")
+    
     db_mongo = client_mongo[databaseMongo]
     col_setup = db_mongo[collection_setup_name]
     col_corredores = db_mongo[collection_corredores_name]
-    print("Connected to MongoDB.")
 
     # --- 3. Process SetupMaze ---
     print("\nSyncing SetupMaze...")
     cursor_nuvem.execute("SELECT * FROM SetupMaze")
     records = cursor_nuvem.fetchall()
 
-    # Reset MongoDB collection
+    # Reset MongoDB collection (Operação de escrita, requer Primary)
     col_setup.drop()
 
     for row in records:
@@ -75,7 +95,7 @@ try:
             row['temperaturevarlowtoleration'], row['normalnoise'], row['noisevartoleration']
         ))
 
-        # B. Insert into MongoDB (Adding the extra PHP arguments)
+        # B. Insert into MongoDB
         setup_doc = {
             "numbermarsamis": row['numbermarsamis'],
             "numberrooms": row['numberrooms'],
@@ -85,7 +105,6 @@ try:
             "normaltemperature": row['normaltemperature'],
             "temperaturevarhightoleration": row['temperaturevarhightoleration'],
             "temperaturevarlowtoleration": row['temperaturevarlowtoleration'],
-            # Adding the arguments from PHP
             "outliers_temperatura": float(php_vars["out_temp"]),
             "outliers_som": float(php_vars["out_som"]),
             "IDSimulacao": int(php_vars["id_sim"])
@@ -97,7 +116,7 @@ try:
     cursor_nuvem.execute("SELECT Rooma, Roomb FROM Corridor")
     corredores = cursor_nuvem.fetchall()
 
-    col_corredores.drop()
+    col_corredores.drop() # Requer Primary
 
     for i, row in enumerate(corredores, start=1):
         # A. MariaDB Local
@@ -133,4 +152,4 @@ except Exception as e:
 finally:
     if 'conn_local' in locals(): conn_local.close()
     if 'conn_nuvem' in locals(): conn_nuvem.close()
-    if 'client_mongo' in locals(): client_mongo.close()
+    if 'client_mongo' in locals() and client_mongo: client_mongo.close()

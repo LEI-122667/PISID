@@ -1,7 +1,8 @@
 import json
+from django import db
 import pymongo
 import paho.mqtt.client as mqtt
-
+from pymongo import MongoClient
 #
 #https://pypi.org/project/pymongo/
 #https://www.emqx.com/en/blog/how-to-use-mqtt-in-python#real-world-python-mqtt-examples
@@ -9,10 +10,12 @@ import paho.mqtt.client as mqtt
 
 class simToMongoDB:
 
-    def __init__(self, topic):
+    def __init__(self, topic, file_path=None):
         self.db = None # Variável global para a base de dados, para ser usada na função de callback do MQTT.
         self.clientMongoDB = None
         self.setMqtt(topic)
+        self.file_path = file_path
+        self.file = open(file_path, "w+") if file_path else None
 
 
     def setMqtt(self, topic):
@@ -29,26 +32,41 @@ class simToMongoDB:
 
 
     def connectToMongoDB(self):
-
-        #URI com as credenciais root:root e porto 27017 (padrão do MongoDB).
-        uri = "mongodb://root:root@localhost:27017/"
-        timeout = 2000  # Tempo de espera - 2 segundos.
+        # Mapeamento das portas que expuseste no Docker
+        portas = [27018, 27019, 27020]
+        timeout = 2000
         pisid = "pisid_maze"
 
-        #Try except caso mongoDB não esteja a correr ou as credenciais estejam erradas.
-        try:
-            #Estabelece a ligação, com um timeout.
-            print("A tentar estabelecer ligação ao MongoDB...")
-            self.clientMongoDB = pymongo.MongoClient(uri,serverSelectionTimeoutMS=timeout)
-    
-            # Testar se o servidor responde.
-            self.clientMongoDB.server_info() 
-            print("\nLigação ao MongoDB estabelecida com sucesso!\n")
+        print("🔎 À procura do nó PRIMARY no Cluster...")
 
-            self.db = self.clientMongoDB[pisid]
+        for porta in portas:
+            try:
+                # Ligação direta a cada porta
+                temp_client = pymongo.MongoClient(
+                    'localhost', 
+                    porta, 
+                    directConnection=True, 
+                    serverSelectionTimeoutMS=timeout
+                )
+                
+                # Pergunta ao nó o seu estado
+                is_master_res = temp_client.admin.command('ismaster')
+                
+                if is_master_res.get('ismaster'): # Se for True, é o Primary
+                    print(f"✅ PRIMARY encontrado na porta {porta}!")
+                    
+                    # Guardamos este cliente e a base de dados na instância da classe
+                    self.clientMongoDB = temp_client
+                    self.db = self.clientMongoDB[pisid]
+                    return # Sai da função assim que encontra o líder
+                else:
+                    print(f"ℹ️ Nó na porta {porta} é SECONDARY. A saltar...")
+                    temp_client.close()
 
-        except Exception as e:
-            print(f"Erro: {e}")
+            except Exception as e:
+                print(f"⚠️ Erro ao tentar porta {porta}: {e}")
+
+        print("❌ Erro: Não foi possível encontrar um nó PRIMARY ativo.")
 
 
     def on_connect(self, client, userdata, flags, rc):
@@ -79,3 +97,9 @@ class simToMongoDB:
         finally:
             self.clientMongoDB.close()
             print("Conexão ao MongoDB fechada.")    
+
+def main():
+    sim_to_mongo = simToMongoDB("lol")
+    sim_to_mongo.connectToMongoDB()
+if __name__ == "__main__":
+    main()

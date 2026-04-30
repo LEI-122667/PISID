@@ -1,121 +1,125 @@
 import pymongo
 import json
-import pymongo
 import paho.mqtt.client as mqtt
+import time
 
-uri = "mongodb://root:root@localhost:27017/"
-timeout = 2000  # Tempo de espera - 2 segundos
-collection_setup = "setup"
-collection_corredores = "corredores"
-db = None
-collectionSetup= None
-collectionCorredores = None
-databaseMongo="pisid_maze"
+# --- Configuração MongoDB Replica Set ---
+MONGO_NODES = [27018, 27019, 27020]
+databaseMongo = "pisid_maze"
 clientMongoDB = None
-#Try except caso mongoDB não esteja a correr ou as credenciais estejam erradas.
-try:
+db = None
 
-    #Estabelece a ligação, com um timeout.
-    clientMongoDB = pymongo.MongoClient(uri, timeout)
-    
-    # Testar se o servidor responde.
-    clientMongoDB.server_info() 
-    print("\nLigação ao MongoDB estabelecida com sucesso!\n")
+def get_mongo_primary():
+    """Tenta localizar o nó Primary no Replica Set."""
+    for porta in MONGO_NODES:
+        try:
+            client = pymongo.MongoClient(
+                'localhost', 
+                porta, 
+                directConnection=True, 
+                serverSelectionTimeoutMS=2000
+            )
+            if client.admin.command('ismaster').get('ismaster'):
+                print(f"✅ MongoDB Primary encontrado na porta {porta}.")
+                return client
+            client.close()
+        except Exception:
+            continue
+    return None
 
-    db = clientMongoDB[databaseMongo]
+def connect_to_mongo():
+    """Inicializa ou atualiza a conexão com o Primary."""
+    global clientMongoDB, db
+    new_client = get_mongo_primary()
+    if new_client:
+        clientMongoDB = new_client
+        db = clientMongoDB[databaseMongo]
+        return True
+    return False
 
-except Exception as e:
-        print(f"Erro: {e}")
+# Inicializar conexão antes de começar o MQTT
+if not connect_to_mongo():
+    print("❌ Erro Fatal: Não foi possível ligar ao MongoDB Primary.")
+    exit(1)
 
-# Configurações MQTT
+# --- Configurações MQTT ---
 mqtt_broker = "broker.hivemq.com"
 mqtt_port = 1883
 topics = ["pisid_2_feedBack_temp", "pisid_2_feedBack_som", "pisid_2_feedBack_moves"]
 
 def on_connect(client, userdata, flags, rc):
-        if rc == 0:
-            print(f"✅ MQTT: Ligado ao Broker {mqtt_broker}")
-            try:
-                for topic in topics:
-                    # O .strip() remove qualquer lixo invisível (espaços, tabs, \r)
-                    filtro = topic.strip()
-                    client.subscribe(filtro)
-                    print(f"📡 Subscrito com sucesso em: {filtro}")
-            except Exception as e:
-                print(f"❌ Erro ao subscrever a {topic}: {e}")
-        else:
-            print(f"MQTT: Erro código {rc}")
+    if rc == 0:
+        print(f"✅ MQTT: Ligado ao Broker {mqtt_broker}")
+        for topic in topics:
+            client.subscribe(topic.strip())
+            print(f"📡 Subscrito em: {topic}")
+    else:
+        print(f"MQTT: Erro código {rc}")
 
 def on_message(client, userdata, msg):
-        try:
-            # Converter a mensagem recebida para dicionário Python
-            raw_payload = msg.payload.decode().replace("'", '"')
-            payload = json.loads(raw_payload)
-            print(f"\n📥 Mensagem recebida no tópico: {msg.topic}")
-
-
-            topico = msg.topic
-
-            if "som" in topico:
-                colecao = db['sensor_ruido']
-                tipo = "SOUND"
-            elif "temp" in topico:
-                colecao = db['sensor_temperatura']
-                tipo = "TEMP"
-            elif "mov" in topico:
-                colecao = db['sensor_movimento']
-                tipo = "MOVIMENTO"
-            else:
-                print(f"⚠️ Tópico desconhecido: {topico}")
-                colecao = db['dados_desconecidos']
-                tipo = "DESCONHECIDO"
-                return
-            
-            if payload['feedBack'] is None:
-                print(f"⚠️ Payload sem feedBack: {payload}")
-                return
+    global db
+    try:
+        raw_payload = msg.payload.decode().replace("'", '"')
+        payload = json.loads(raw_payload)
+        topico = msg.topic
         
-            if payload['feedBack'] == 1 or payload['feedBack'] == -2:
-                 colecao.update_one(
-                    {"idIncremental": payload['idIncremental']},
-                    {"$set": {"inserted": True}}
-                  )
-                 print(f"✅ Feedback positivo recebido para idIncremental {payload['idIncremental']} - Documento marcado como inserido.")
+        # Identificar coleções baseadas no tópico
+        if "som" in topico:
+            colecao_nome = 'sensor_ruido'
+            outlier_nome = 'outliers_DadosErrados_ruido'
+        elif "temp" in topico:
+            colecao_nome = 'sensor_temperatura'
+            outlier_nome = 'outliers_DadosErrados_temperatura'
+        elif "mov" in topico:
+            colecao_nome = 'sensor_movimento'
+            outlier_nome = 'outliers_DadosErrados_movimento'
+        else:
+            return
 
-            if payload['feedBack'] == 0:
-                 print(f"⚠️ Feedback neutro recebido para idIncremental {payload['idIncremental']} - Nenhuma ação tomada.")
-                 return
+        if payload.get('feedBack') is None:
+            return
 
-            if payload['feedBack'] == -1:
-                 #Remover o documento da coleção, caso o feedback seja -1 (indica que o dado é inválido)
-                 doc = colecao.find_one({"idIncremental": payload['idIncremental']})
-                 if doc:
-                    colecao.delete_one({"idIncremental": payload['idIncremental']})
-                    if tipo == "SOUND":
-                        db['outliers_DadosErrados_ruido'].insert_one(doc)
-                    elif tipo == "TEMP":
-                        db['outliers_DadosErrados_temperatura'].insert_one(doc)
-                    elif tipo == "MOVIMENTO":
-                        db['outliers_DadosErrados_movimento'].insert_one(doc)
-                    print(f"❌ Feedback negativo recebido para idIncremental {payload['idIncremental']} - Documento removido e movido para coleção de outliers.")
-                        
-        except Exception as e:
-            print(f"Erro ao processar mensagem no tópico {msg.topic}: {e}")
+        id_inc = payload['idIncremental']
+
+        # Tentar realizar a operação no Mongo
+        try:
+            colecao = db[colecao_nome]
+
+            # Caso 1: Sucesso ou Duplicado
+            if payload['feedBack'] in [1, -2]:
+                colecao.update_one({"idIncremental": id_inc}, {"$set": {"inserted": True}})
+                print(f"✅ Feedback {payload['feedBack']} para ID {id_inc}")
+
+            # Caso 2: Dado Inválido (Mover para Outliers)
+            elif payload['feedBack'] == -1:
+                doc = colecao.find_one({"idIncremental": id_inc})
+                if doc:
+                    colecao.delete_one({"idIncremental": id_inc})
+                    db[outlier_nome].insert_one(doc)
+                    print(f"❌ Documento {id_inc} movido para outliers.")
+
+        except (pymongo.errors.AutoReconnect, pymongo.errors.NotPrimaryError):
+            print("⚠️ Conexão com Primary perdida. Reatribuindo...")
+            if connect_to_mongo():
+                # Tenta processar a mesma mensagem uma segunda vez
+                on_message(client, userdata, msg)
+            
+    except Exception as e:
+        print(f"Erro ao processar mensagem: {e}")
 
 def connect():
+    mqtt_client = mqtt.Client()
+    mqtt_client.on_connect = on_connect
+    mqtt_client.on_message = on_message
     try:
-        print("A iniciar captura de dados...")
+        print("A iniciar captura de feedbacks...")
         mqtt_client.connect(mqtt_broker, mqtt_port, 60)
         mqtt_client.loop_forever()
     except KeyboardInterrupt:
-        print("\n🛑 Script terminado pelo utilizador.")
+        print("\n🛑 Script terminado.")
     finally:
-        clientMongoDB.close()
-        print("Conexão ao MongoDB fechada.")    
+        if clientMongoDB:
+            clientMongoDB.close()
 
-# Inicializar o cliente MQTT dentro do objeto
-mqtt_client = mqtt.Client()
-mqtt_client.on_connect = on_connect
-mqtt_client.on_message = on_message
-
-connect()
+if __name__ == "__main__":
+    connect()
