@@ -1,0 +1,15 @@
+CREATE TRIGGER Alterar_Permissoes
+AFTER INSERT ON Simulacao
+FOR EACH ROW
+BEGIN
+    -- Atualiza os utilizadores da mesma equipa para 'Leitor'.
+    -- O código abaixo assume que baixa temporariamente quem é 'Criador' nessa equipa.
+    -- Se houver na tabela "ID do Criador do Jogo", podiamos fazer && AND IDUtilizador != NEW.IDCriador && para garantir que quem executa o comando nao é rebaixado
+    UPDATE Utilizador
+    SET Tipo = 'Leitor'
+    WHERE Equipa = NEW.Equipa
+      AND Tipo = 'Criador';
+
+
+END$$
+

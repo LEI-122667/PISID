@@ -1,0 +1,19 @@
+CREATE TRIGGER Alerta_Temperatura
+AFTER INSERT ON Temperatura
+FOR EACH ROW
+BEGIN
+    DECLARE limite_alto DECIMAL(1,0);   -- Valor limite definido
+    DECLARE limite_baixo DECIMAL(1,0);  -- Valor limite definido
+
+    -- Vai buscar os limites da temperatura na configuração do jogo
+    SELECT alerta_temperatura_high, alerta_temperatura_low
+    INTO limite_alto, limite_baixo
+    FROM ConfigJogo
+    WHERE IDSimulacao = NEW.IDSimulacao LIMIT 1;
+
+    -- Caso a temperatura atinja/ultrapasse os limites superior ou inferior
+    IF NEW.Temperatura >= limite_alto OR NEW.Temperatura <= limite_baixo THEN
+        INSERT INTO Mensagens (IDSimulacao, Hora, Sensor, Leitura, TipoAlerta, Msg)
+        VALUES (NEW.IDSimulacao, NEW.Hora, 'Temp', NEW.Temperatura, 'Alerta de Temperatura', 'A temperatura atingiu um valor crítico.');
+    END IF;
+END$$

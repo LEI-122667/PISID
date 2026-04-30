@@ -1,0 +1,26 @@
+CREATE TRIGGER Inserir_Marsamis
+AFTER INSERT ON MedicoesPassagens
+FOR EACH ROW
+BEGIN
+    DECLARE v_isEven BOOLEAN;
+    SET v_isEven = (NEW.Marsami % 2 = 0);
+
+
+    IF NEW.Status = 1 THEN
+        IF v_isEven THEN
+            -- Atualiza os Even
+            UPDATE OcupacaoLabirinto SET NumeroMarsamisEven = GREATEST(0, NumeroMarsamisEven - 1)
+            WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaOrigem;
+
+            UPDATE OcupacaoLabirinto SET NumeroMarsamisEven = NumeroMarsamisEven + 1
+            WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaDestino;
+        ELSE
+            -- Atualiza os Odd
+            UPDATE OcupacaoLabirinto SET NumeroMarsamisOdd = GREATEST(0, NumeroMarsamisOdd - 1)
+            WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaOrigem;
+
+            UPDATE OcupacaoLabirinto SET NumeroMarsamisOdd = NumeroMarsamisOdd + 1
+            WHERE IDSimulacao = NEW.IDSimulacao AND Sala = NEW.SalaDestino;
+        END IF;
+    END IF;
+END$$

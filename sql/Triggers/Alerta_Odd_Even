@@ -1,0 +1,15 @@
+CREATE TRIGGER Alerta_Odd_Even
+AFTER UPDATE ON OcupacaoLabirinto
+FOR EACH ROW
+BEGIN
+    -- Verifica se o numero ficou igual e se não estava igual antes (evitar spam de mensagens)
+    -- Garante que a sala não está vazia (> 0)
+    IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven
+       AND OLD.NumeroMarsamisOdd != OLD.NumeroMarsamisEven
+       AND NEW.NumeroMarsamisOdd > 0 THEN
+
+        INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg)
+        VALUES (NEW.IDSimulacao, CURRENT_TIMESTAMP, NEW.Sala, 'Ocupacao', NEW.NumeroMarsamisOdd, 'Alerta Marsamis', 'O número de marsamis Odd e Even ficou igual na sala.');
+    END IF;
+END$$
+

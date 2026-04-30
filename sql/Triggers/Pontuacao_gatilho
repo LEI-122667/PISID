@@ -1,0 +1,15 @@
+CREATE TRIGGER Pontuacao_gatilho
+BEFORE UPDATE ON OcupacaoLabirinto
+FOR EACH ROW
+BEGIN
+    -- Verifica se o estado do 'Gatilho' foi ativado/alterado nesta atualização
+    IF NEW.Gatilho != OLD.Gatilho THEN
+        -- Verifica a regra (Odd igual a Even)
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
+            -- Atualiza a pontuação (valor exemplificativo: 10 pontos)
+            UPDATE Simulacao
+            SET Pontuacao = Pontuacao + 10
+            WHERE IDSimulacao = NEW.IDSimulacao;
+        END IF;
+    END IF;
+END$$
