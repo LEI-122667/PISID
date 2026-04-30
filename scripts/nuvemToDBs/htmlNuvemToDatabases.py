@@ -16,22 +16,19 @@ collection_setup_name = "setup"
 collection_corredores_name = "corredores"
 
 # --- 1. Capture Arguments from PHP ---
-# Expected order: IDSimulacao, outliers_temp, outliers_som, alerta_temp_h, alerta_temp_l, alerta_som, time_fechar, ruido_limite, amount_of_gatilhos
-try:
-    php_vars = {
-        "id_sim": sys.argv[1],
-        "out_temp": sys.argv[2],
-        "out_som": sys.argv[3],
-        "al_temp_h": sys.argv[4],
-        "al_temp_l": sys.argv[5],
-        "al_som": sys.argv[6],
-        "t_fechar": sys.argv[7],
-        "ruido_lim": sys.argv[8],
-        "amt_gatilhos": sys.argv[9]
-    }
-except IndexError:
-    print("Error: Missing arguments from PHP. Script requires 9 arguments.")
-    sys.exit(1)
+# Expected order: [IDSimulacao, outliers_temp, outliers_som, alerta_temp_h, alerta_temp_l, alerta_som, time_fechar, ruido_limite, amount_of_gatilhos]
+id_sim = sys.argv[1] if len(sys.argv) > 1 else "1"
+php_vars = {
+    "id_sim": id_sim,
+    "out_temp": sys.argv[2] if len(sys.argv) > 2 else "2.0",
+    "out_som": sys.argv[3] if len(sys.argv) > 3 else "2.0",
+    "al_temp_h": sys.argv[4] if len(sys.argv) > 4 else "5",
+    "al_temp_l": sys.argv[5] if len(sys.argv) > 5 else "5",
+    "al_som": sys.argv[6] if len(sys.argv) > 6 else "5",
+    "t_fechar": sys.argv[7] if len(sys.argv) > 7 else "10",
+    "ruido_lim": sys.argv[8] if len(sys.argv) > 8 else "0",
+    "amt_gatilhos": sys.argv[9] if len(sys.argv) > 9 else "3"
+}
 
 try:
     # --- 2. Establish Connections ---
@@ -64,13 +61,13 @@ try:
 
     for row in records:
         # A. Insert into Local MariaDB
-        sql_mariadb = """INSERT INTO SetupMaze (NumberRooms, NumberMarsamis, NumberPlayers, NormalTemperature,
+        sql_mariadb = """INSERT INTO SetupMaze (IDSimulacao, NumberRooms, NumberMarsamis, NumberPlayers, NormalTemperature,
                                                 TemperatureVarHighToleration, TemperatureVarLowToleration, NormalNoise, \
                                                 NoiseVarToleration)
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
 
         cursor_local.execute(sql_mariadb, (
-            row['numberrooms'], row['numbermarsamis'], row['numberplayers'],
+            php_vars['id_sim'], row['numberrooms'], row['numbermarsamis'], row['numberplayers'],
             row['normaltemperature'], row['temperaturevarhightoleration'],
             row['temperaturevarlowtoleration'], row['normalnoise'], row['noisevartoleration']
         ))
@@ -101,7 +98,7 @@ try:
 
     for i, row in enumerate(corredores, start=1):
         # A. MariaDB Local
-        cursor_local.execute("INSERT INTO Corridor (RoomA, RoomB) VALUES (%s, %s)", (row['Rooma'], row['Roomb']))
+        cursor_local.execute("INSERT INTO Corridor (IDSimulacao, RoomA, RoomB) VALUES (%s, %s, %s)", (php_vars['id_sim'], row['Rooma'], row['Roomb']))
 
         # B. MongoDB
         corredor_doc = {

@@ -9,7 +9,7 @@ CREATE TABLE Simulacao (
     Descricao      TEXT,
     Equipa         INT, -- Added UNIQUE so Utilizador can reference it
     DataHoraInicio TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
-    Pontuacao      INT            DEFAULT 0,
+    Pontuacao      DOUBLE         DEFAULT 0,
     ArCondicionado BOOLEAN        DEFAULT FALSE,
     Ativo          BOOLEAN        DEFAULT TRUE  
 );

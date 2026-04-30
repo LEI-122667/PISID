@@ -31,7 +31,7 @@ BEGIN
             
     	-- 4. VERIFICA SE GATILHO DA SALA FICA IGUAL OU MENOR QUE 0
     	SELECT Gatilho INTO v_NGatilhoSala
-    	FROM ocupacaolabirinto
+    	FROM OcupacaoLabirinto
     	WHERE Sala = p_SalaId AND IDSimulacao = v_IDSimulacao
     	LIMIT 1;
         
@@ -47,7 +47,7 @@ BEGIN
     			SELECT -1 AS Result;
             
         	ELSE 
-        		UPDATE ocupacaolabirinto
+        		UPDATE OcupacaoLabirinto
         		SET Gatilho = v_DiferencaGatilho
       			WHERE Sala = p_SalaId AND IDSimulacao = v_IDSimulacao;
         

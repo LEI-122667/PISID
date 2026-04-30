@@ -27,7 +27,7 @@ BEGIN
     
     ELSE
 		SELECT *
-        FROM mensagens
+        FROM Mensagens
         WHERE ID > p_LastId AND IDSimulacao = v_IDSimulacao
         ORDER BY ID ASC
         LIMIT 1;

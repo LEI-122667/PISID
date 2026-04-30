@@ -16,14 +16,14 @@ BEGIN
     -- Get alert thresholds
     SELECT COALESCE(alerta_temperatura_high, 0), COALESCE(alerta_temperatura_low, 0)
     INTO alertaSuperior, alertaInferior
-    FROM configjogo
+    FROM ConfigJogo
     WHERE IDSimulacao = NEW.IDSimulacao
     LIMIT 1;
     
     -- Get baseline maze setup
     SELECT COALESCE(NormalTemperature, 0), COALESCE(TemperatureVarHighToleration, 0), COALESCE(TemperatureVarLowToleration, 0)
     INTO normalTemp, tempHighTol, tempLowTol
-    FROM setupmaze
+    FROM SetupMaze
     WHERE IDSimulacao = NEW.IDSimulacao
     LIMIT 1;
     
@@ -34,14 +34,14 @@ BEGIN
     -- Check AC status
     SELECT COALESCE(ArCondicionado, 0)
     INTO arcondicionado
-    FROM simulacao
+    FROM Simulacao
     WHERE IDSimulacao = NEW.IDSimulacao
     LIMIT 1;
     
     -- Logic: Trigger alert if temperature is an outlier and AC is OFF (0)
     IF (NEW.Temperatura >= (limiteSuperior - alertaSuperior) OR NEW.Temperatura <= (limiteInferior + alertaInferior)) AND arcondicionado = 0 THEN
     
-        INSERT INTO mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
         VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'AtivacaoGatilho', 'Outlier na temperatura', NEW.Hora);
         
     END IF;

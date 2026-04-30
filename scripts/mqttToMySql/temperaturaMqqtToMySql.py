@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import mysql.connector
 from mysql.connector import Error
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Configurações do MySql (Usando o utilizador específico para temperatura)
 usermysql = "script_temperatura"
@@ -43,7 +43,8 @@ def parse_datetime(value):
     ]
     for fmt in formats:
         try:
-            return datetime.strptime(value, fmt).strftime("%Y-%m-%d %H:%M:%S")
+            dt = datetime.strptime(value, fmt)
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
         except ValueError:
             continue
     return None

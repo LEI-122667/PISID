@@ -7,10 +7,14 @@ BEGIN
 
     IF NEW.Gatilho < OLD.Gatilho THEN
     
-    	IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven THEN
+    	IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
         	UPDATE Simulacao
             SET Pontuacao = Pontuacao + 1
-            WHERE IDSimulacao = NEW.IDSimulacao;
+            WHERE IDSimulacao = NEW.IDSimulacao AND Ativo = TRUE;
+        ELSE
+            UPDATE Simulacao
+            SET Pontuacao = Pontuacao - 0.5
+            WHERE IDSimulacao = NEW.IDSimulacao AND Ativo = TRUE;
         END IF;
         
     END IF;

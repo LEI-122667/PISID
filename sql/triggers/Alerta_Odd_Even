@@ -1,15 +1,37 @@
+DROP TRIGGER IF EXISTS Alerta_Odd_Even;
+DROP TRIGGER IF EXISTS Alerta_Odd_Even_Update;
+DROP TRIGGER IF EXISTS Alerta_Odd_Even_Insert;
+
 DELIMITER $$
 
-CREATE TRIGGER Alerta_Odd_Even 
+CREATE TRIGGER Alerta_Odd_Even_Update
 AFTER UPDATE ON OcupacaoLabirinto
 FOR EACH ROW
 BEGIN
+    DECLARE v_ativo BOOLEAN;
+    SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
 
-    IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven THEN
-        INSERT INTO mensagens (IDSimulacao, Sala, TipoAlerta, Msg)
-        VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even');
+    IF v_ativo = TRUE THEN
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
+            INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
+            VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even', '0', NOW(), NULL);
+        END IF;
     END IF;
+END$$
 
+CREATE TRIGGER Alerta_Odd_Even_Insert
+AFTER INSERT ON OcupacaoLabirinto
+FOR EACH ROW
+BEGIN
+    DECLARE v_ativo BOOLEAN;
+    SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
+
+    IF v_ativo = TRUE THEN
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
+            INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
+            VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even', '0', NOW(), NULL);
+        END IF;
+    END IF;
 END$$
 
 DELIMITER ;

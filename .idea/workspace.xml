@@ -4,7 +4,33 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Implementacao do topico do movimeto do mqtt para o mysql" />
+    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Docker-compose funcional">
+      <change beforePath="$PROJECT_DIR$/.idea/PISID.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PISID.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/agentejogo.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/agentejogo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/last_id.txt" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/last_id.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/mqttToMySql/movimentoMqqtToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/mqttToMySql/movimentoMqqtToMySql.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/mqttToMySql/somMqqtToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/mqttToMySql/somMqqtToMySql.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/mqttToMySql/temperaturaMqqtToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/mqttToMySql/temperaturaMqqtToMySql.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/nuvemToDBs/htmlNuvemToDatabases.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/nuvemToDBs/htmlNuvemToDatabases.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/nuvemToDBs/nuvemToMySql.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/nuvemToDBs/nuvemToMySql.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/Ativar_Gatilho" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/Ativar_Gatilho" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/Fechar_Abrir_Corredor" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/Fechar_Abrir_Corredor" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/Fechar_Abrir_TodosCorredores" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/Fechar_Abrir_TodosCorredores" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/Inserir_Movimento" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/Inserir_Movimento" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/Inserir_Som" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/Inserir_Som" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/Inserir_Temperatura" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/Inserir_Temperatura" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/Ler_Alertas" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/Ler_Alertas" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/SP/sps.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/SP/sps.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/bd_pisid.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/bd_pisid.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/triggers/Alerta_Odd_Even" beforeDir="false" afterPath="$PROJECT_DIR$/sql/triggers/Alerta_Odd_Even" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/triggers/Alerta_Som" beforeDir="false" afterPath="$PROJECT_DIR$/sql/triggers/Alerta_Som" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/triggers/Alerta_Temperatura" beforeDir="false" afterPath="$PROJECT_DIR$/sql/triggers/Alerta_Temperatura" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/triggers/Inserir_Marsamis" beforeDir="false" afterPath="$PROJECT_DIR$/sql/triggers/Inserir_Marsamis" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/triggers/Pontuacao_gatilho" beforeDir="false" afterPath="$PROJECT_DIR$/sql/triggers/Pontuacao_gatilho" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -31,10 +57,13 @@
     &quot;assignee&quot;: &quot;PedroAngelino&quot;
   }
 }</component>
+  <component name="GithubDefaultAccount">
+    <option name="defaultAccountId" value="9f38cf8b-f13f-4ebc-8050-f90157d46f77" />
+  </component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/LEI-122667/PISID.git&quot;,
-    &quot;accountId&quot;: &quot;22e58010-2f81-46fe-8995-13a506227a4e&quot;
+    &quot;accountId&quot;: &quot;9f38cf8b-f13f-4ebc-8050-f90157d46f77&quot;
   }
 }</component>
   <component name="ProjectCodeStyleSettingsMigration">
@@ -51,32 +80,38 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Docker.docker-compose.yaml: Compose Deployment.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.movimentoMqqtToMySql.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/home/st3ps/PycharmProjects/PISID/scripts/mqttToMySql",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Docker.docker-compose.yaml: Compose Deployment.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.agentejogo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.htmlNuvemToDatabases.executor&quot;: &quot;Run&quot;,
+    &quot;Python.movimentoMqqtToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;Python.nuvemDbToMongo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.nuvemToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;Python.somMqqtToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;Python.temperaturaMqqtToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/st3ps/PycharmProjects/PISID/scripts/mqttToMySql&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/scripts/mqttToMySql" />
@@ -95,14 +130,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="SDK_NAME" value="Python 3.12 (PyCharmMiscProject)" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts/mqttToMySql" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="DEBUG_JUST_MY_CODE" value="false" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/mqttToMySql/movimentoMqqtToMySql.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -122,7 +154,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-b63d5a1f7c97-b61e75351b1f-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-261.22158.340" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-PY-252.28539.27" />
+        <option value="bundled-python-sdk-07523f343e4f-968fe969f28a-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.28539.27" />
       </set>
     </attachedChunks>
   </component>
@@ -137,6 +170,17 @@
       <workItem from="1773709439261" duration="2371000" />
       <workItem from="1773711839026" duration="620000" />
       <workItem from="1777298380633" duration="10408000" />
+      <workItem from="1777375213730" duration="7706000" />
+      <workItem from="1777388025916" duration="1998000" />
+      <workItem from="1777390888669" duration="76000" />
+      <workItem from="1777392626799" duration="602000" />
+      <workItem from="1777415061976" duration="4003000" />
+      <workItem from="1777457101526" duration="64000" />
+      <workItem from="1777464496779" duration="428000" />
+      <workItem from="1777465412882" duration="26000" />
+      <workItem from="1777474780979" duration="3056000" />
+      <workItem from="1777558365752" duration="10086000" />
+      <workItem from="1777578593800" duration="1938000" />
     </task>
     <task id="LOCAL-00001" summary="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even">
       <option name="closed" value="true" />
@@ -170,7 +214,47 @@
       <option name="project" value="LOCAL" />
       <updated>1777302116157</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Corrigidos erros de MQTT para MySQL">
+      <option name="closed" value="true" />
+      <created>1777377345242</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1777377345242</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Corrigidos erros MQTT to MySQL e adicionado HTML request">
+      <option name="closed" value="true" />
+      <created>1777389947876</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1777389947876</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Corrigidos erros MQTT to MySQL e adicionado HTML request">
+      <option name="closed" value="true" />
+      <created>1777390032003</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1777390032003</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Fixed roles, sps e bd, adicionado html da nuvem para as base de dados, o php de criar o jogo deve conseguir criar um jogo e ir buscar os dados à nuvem, agente de jogo criado">
+      <option name="closed" value="true" />
+      <created>1777481163579</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1777481163579</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Docker-compose funcional">
+      <option name="closed" value="true" />
+      <created>1777558464728</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1777558464728</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -190,7 +274,11 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even" />
     <MESSAGE value="Implementacao do topico do movimeto do mqtt para o mysql" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implementacao do topico do movimeto do mqtt para o mysql" />
+    <MESSAGE value="Corrigidos erros de MQTT para MySQL" />
+    <MESSAGE value="Corrigidos erros MQTT to MySQL e adicionado HTML request" />
+    <MESSAGE value="Fixed roles, sps e bd, adicionado html da nuvem para as base de dados, o php de criar o jogo deve conseguir criar um jogo e ir buscar os dados à nuvem, agente de jogo criado" />
+    <MESSAGE value="Docker-compose funcional" />
+    <option name="LAST_COMMIT_MESSAGE" value="Docker-compose funcional" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -203,6 +291,12 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/PISID$movimentoMqqtToMySql.coverage" NAME="movimentoMqqtToMySql Coverage Results" MODIFIED="1777366810328" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts/mqttToMySql" />
+    <SUITE FILE_PATH="coverage/PISID$temperaturaMqqtToMySql.coverage" NAME="temperaturaMqqtToMySql Coverage Results" MODIFIED="1777568064538" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts/mqttToMySql" />
+    <SUITE FILE_PATH="coverage/PISID$agentejogo.coverage" NAME="agentejogo Coverage Results" MODIFIED="1777568048866" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts" />
+    <SUITE FILE_PATH="coverage/PISID$movimentoMqqtToMySql.coverage" NAME="movimentoMqqtToMySql Coverage Results" MODIFIED="1777568057961" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts/mqttToMySql" />
+    <SUITE FILE_PATH="coverage/PISID$nuvemToMySql.coverage" NAME="nuvemToMySql Coverage Results" MODIFIED="1777566960862" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts/nuvemToDBs" />
+    <SUITE FILE_PATH="coverage/PISID$nuvemDbToMongo.coverage" NAME="nuvemDbToMongo Coverage Results" MODIFIED="1777384070852" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts/nuvemToDBs" />
+    <SUITE FILE_PATH="coverage/PISID$somMqqtToMySql.coverage" NAME="somMqqtToMySql Coverage Results" MODIFIED="1777568061476" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts/mqttToMySql" />
+    <SUITE FILE_PATH="coverage/PISID$htmlNuvemToDatabases.coverage" NAME="htmlNuvemToDatabases Coverage Results" MODIFIED="1777419645638" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts/nuvemToDBs" />
   </component>
 </project>

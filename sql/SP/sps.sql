@@ -135,7 +135,7 @@ BEGIN
 
     	-- 4. VERIFICA SE GATILHO DA SALA FICA IGUAL OU MENOR QUE 0
     	SELECT Gatilho INTO v_NGatilhoSala
-    	FROM ocupacaolabirinto
+    	FROM OcupacaoLabirinto
     	WHERE Sala = p_SalaId AND IDSimulacao = v_IDSimulacao
     	LIMIT 1;
 
@@ -151,7 +151,7 @@ BEGIN
     			SELECT -1 AS Result;
 
         	ELSE
-        		UPDATE ocupacaolabirinto
+        		UPDATE OcupacaoLabirinto
         		SET Gatilho = v_DiferencaGatilho
       			WHERE Sala = p_SalaId AND IDSimulacao = v_IDSimulacao;
 
@@ -306,7 +306,7 @@ BEGIN
     ELSE
     	SELECT EXISTS (
             SELECT 1
-            FROM corridor
+            FROM Corridor
             WHERE IDCorridor = p_CorredorId AND IDSimulacao = v_IDSimulacao
         ) INTO v_CorredorExiste;
 
@@ -315,7 +315,7 @@ BEGIN
     		SELECT -1 AS Result;
 
         ELSE
-        	UPDATE corridor
+        	UPDATE Corridor
         	SET Fechado = p_Estado
         	WHERE IDCorridor = p_CorredorId;
 
@@ -356,7 +356,7 @@ BEGIN
         SELECT -1 AS Result;
 
     ELSE
-    	UPDATE corridor
+    	UPDATE Corridor
         SET Fechado = p_Estado
         WHERE Fechado != p_Estado;
 
@@ -409,7 +409,7 @@ BEGIN
             SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1;
 
             -- Se não houver simulação ativa ou data futura
-            IF v_IDSimulacao IS NULL OR p_Hora > NOW() THEN
+            IF v_IDSimulacao IS NULL OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
                 SELECT -1 AS Result;
 
             ELSE
@@ -507,7 +507,7 @@ BEGIN
             -- - Som não pode ser negativo
             -- - Deve haver uma simulação ativa
             -- - A data não pode ser futura
-            IF v_IDSimulacao IS NULL OR p_Som < 0 OR p_Hora > NOW() THEN
+            IF v_IDSimulacao IS NULL OR p_Som < 0 OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
                 SELECT -1 AS Result;
 
             ELSE
@@ -570,7 +570,7 @@ BEGIN
             LIMIT 1;
 
             -- Se não houver simulação ativa ou data for futura (Dado Inválido)
-            IF v_IDSimulacao IS NULL OR p_Hora > NOW() THEN
+            IF v_IDSimulacao IS NULL OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
                 SELECT -1 AS Result;
 
             ELSE
@@ -638,7 +638,7 @@ BEGIN
 
     ELSE
 		SELECT *
-        FROM mensagens
+        FROM Mensagens
         WHERE ID > p_LastId AND IDSimulacao = v_IDSimulacao
         ORDER BY ID ASC
         LIMIT 1;

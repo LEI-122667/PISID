@@ -13,13 +13,13 @@ BEGIN
 
     SELECT COALESCE(alerta_som, 0)
     INTO alerta
-    FROM configjogo
+    FROM ConfigJogo
     WHERE IDSimulacao = NEW.IDSimulacao
     LIMIT 1;
     
     SELECT COALESCE(NormalNoise, 0), COALESCE(NoiseVarToleration, 0)
     INTO normalNoise, noiseTol
-    FROM setupmaze
+    FROM SetupMaze
     WHERE IDSimulacao = NEW.IDSimulacao
     LIMIT 1;
     
@@ -27,12 +27,12 @@ BEGIN
     
     SELECT COUNT(*)
     INTO corredoresAbertos
-    FROM corridor
+    FROM Corridor
     WHERE IDSimulacao = NEW.IDSimulacao AND Fechado = 0;
     
     IF NEW.Som >= (limite - alerta) AND corredoresAbertos > 0 THEN
        
-        INSERT INTO mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
         VALUES (NEW.IDSimulacao,'2', NEW.Som,'AtivacaoGatilho','Outlier no ruído',NEW.Hora);
         
     END IF;

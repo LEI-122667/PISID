@@ -6,6 +6,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: bd_pisid
+      TZ: "Europe/Lisbon"
     ports:
       - "3306:3306"
 
@@ -18,5 +19,23 @@ services:
     environment:
       PMA_HOST: mysql
       MYSQL_ROOT_PASSWORD: root
+      TZ: "Europe/Lisbon"
     depends_on:
       - mysql
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: pisid_maze
+      TZ: "Europe/Lisbon"
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

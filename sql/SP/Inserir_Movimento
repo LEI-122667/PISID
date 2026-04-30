@@ -38,7 +38,7 @@ BEGIN
             SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1;
             
             -- Se não houver simulação ativa ou data futura
-            IF v_IDSimulacao IS NULL OR p_Hora > NOW() THEN
+            IF v_IDSimulacao IS NULL OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
                 SELECT -1 AS Result;
             
             ELSE

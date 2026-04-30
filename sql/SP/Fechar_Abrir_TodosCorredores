@@ -25,7 +25,7 @@ BEGIN
         SELECT -1 AS Result;
     
     ELSE
-    	UPDATE corridor
+    	UPDATE Corridor
         SET Fechado = p_Estado
         WHERE Fechado != p_Estado;
     	

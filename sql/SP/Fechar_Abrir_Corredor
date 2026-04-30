@@ -29,7 +29,7 @@ BEGIN
     ELSE
     	SELECT EXISTS ( 
             SELECT 1 
-            FROM corridor 
+            FROM Corridor 
             WHERE IDCorridor = p_CorredorId AND IDSimulacao = v_IDSimulacao 
         ) INTO v_CorredorExiste;
         
@@ -38,7 +38,7 @@ BEGIN
     		SELECT -1 AS Result;
             
         ELSE
-        	UPDATE corridor
+        	UPDATE Corridor
         	SET Fechado = p_Estado
         	WHERE IDCorridor = p_CorredorId;
     	

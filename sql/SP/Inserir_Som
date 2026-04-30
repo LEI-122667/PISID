@@ -41,7 +41,7 @@ BEGIN
             -- - Som não pode ser negativo
             -- - Deve haver uma simulação ativa
             -- - A data não pode ser futura
-            IF v_IDSimulacao IS NULL OR p_Som < 0 OR p_Hora > NOW() THEN
+            IF v_IDSimulacao IS NULL OR p_Som < 0 OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
                 SELECT -1 AS Result;
 
             ELSE
