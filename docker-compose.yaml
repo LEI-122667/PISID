@@ -1,40 +1,22 @@
 services:
-  db:
+  mysql:
     image: mysql:8.0
-    container_name: meu_mysql
+    container_name: mysql_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: bd_pisid
-      MYSQL_USER: user
-      MYSQL_PASSWORD: user
     ports:
       - "3306:3306"
-    volumes:
-      # 1º Importar a BD principal (vai correr primeiro por causa do '01_')
-      - ./sql/bd_pisid.sql:/docker-entrypoint-initdb.d/01_bd_pisid.sql
-
-      # 2º Importar as Stored Procedures
-      - ./sql/SP/sps.sql:/docker-entrypoint-initdb.d/02_sps.sql
-
-      # 3º Importar os Roles e Users
-      - ./sql/Roles&Users/users.sql:/docker-entrypoint-initdb.d/03_users.sql
-      - ./sql/Roles&Users/roles.sql:/docker-entrypoint-initdb.d/04_roles.sql
-
-      # Persistência de dados
-      - mysql_data:/var/lib/mysql
 
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: meu_phpmyadmin
+    container_name: phpmyadmin
     restart: always
-    links:
-      - db
-    environment:
-      PMA_HOST: db
-      PMA_ARBITRARY: 1
     ports:
       - "8080:80"
-
-volumes:
-  mysql_data:
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql
