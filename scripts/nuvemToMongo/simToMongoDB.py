@@ -1,4 +1,5 @@
 import json
+import os
 import pymongo
 import paho.mqtt.client as mqtt
 
@@ -79,3 +80,37 @@ class simToMongoDB:
         finally:
             self.clientMongoDB.close()
             print("Conexão ao MongoDB fechada.")    
+
+    def getId(self, topic):
+        if topic == "sensor_movimento":
+            fileName = "last_id_sensor_movimento.txt"
+            colecao = self.db["sensor_movimento"]
+        elif topic == "sensor_temperatura":
+            fileName = "last_id_sensor_temperatura.txt"
+            colecao = self.db["sensor_temperatura"]
+        else:
+            fileName = "last_id_sensor_ruido.txt"
+            colecao = self.db["sensor_ruido"]
+        
+        file_path = os.path.join(os.path.dirname(__file__), "..", fileName)
+
+        last_id = None
+         
+        if os.path.exists(file_path):
+            with open(file_path, "r") as f:
+                content = f.read().strip()
+                if content:
+                    last_id = int(content)
+
+        if last_id is None:
+            ultimo_registro = list(colecao.find().sort("idIncremental", -1).limit(1))
+            if ultimo_registro:
+                last_id = ultimo_registro[0].get('idIncremental', 0)
+            else:
+                last_id = 0
+
+        new_id = last_id + 1
+        with open(file_path, "w") as f: 
+            f.write(str(new_id))
+        
+        return new_id

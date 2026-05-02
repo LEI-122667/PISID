@@ -25,14 +25,8 @@ class somSimToMongo(simToMongoDB):
                 return
 
             payload['inserted'] = False
-            payload['timeSent'] = None
-
-            ultimo_registro = list(colecao.find().sort("idIncremental", -1).limit(1))            
-            
-            if not ultimo_registro:
-                payload['idIncremental'] = 1
-            else:
-                payload['idIncremental'] = ultimo_registro[0].get('idIncremental', 0) + 1
+            payload['timeSent'] = None            
+            payload['idIncremental'] = self.getId("sensor_ruido")
 
             colecao.insert_one(payload)
             print(f"💾 [{tipo}] Jogador {payload.get('Player')}: ID: {payload.get('idIncremental')} Sound: {payload.get('Sound')}")
