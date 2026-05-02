@@ -173,7 +173,8 @@ CREATE PROCEDURE Criar_Jogo(
     IN p_Equipa         INT,
     IN p_DataHoraInicio TIMESTAMP,
     IN p_Pontuacao      INT,
-    IN p_ArCondicionado BOOLEAN
+    IN p_ArCondicionado BOOLEAN,
+    OUT p_IDSimulacao   INT
 )
 BEGIN
     -- Check no active simulation already exists
@@ -192,6 +193,7 @@ BEGIN
         TRUE
     );
 
+    SET p_IDSimulacao = LAST_INSERT_ID();
 END$$
 
 DELIMITER ;

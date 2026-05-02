@@ -3,7 +3,7 @@ import json
 import pymongo
 import paho.mqtt.client as mqtt
 
-uri = "mongodb://root:root@localhost:27017/?authSource=admin"
+uri = "mongodb://root:root@localhost:27018/?authSource=admin"
 timeout = 2000  # Tempo de espera - 2 segundos
 collection_setup = "setup"
 collection_corredores = "corredores"

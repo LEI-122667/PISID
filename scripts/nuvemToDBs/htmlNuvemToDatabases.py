@@ -4,13 +4,13 @@ import pymongo
 import sys
 
 # --- Configuration: MariaDB Local ---
-usermysql, passmysql, hostmysql, database = "root", "root", "localhost", "bd_pisid"
+usermysql, passmysql, hostmysql, database = "root", "root", "mysql", "bd_pisid"
 
 # --- Configuration: MariaDB Cloud ---
 nuvemuser, nuvempass, nuvemhost, nuvemDb = "aluno", "aluno", "194.210.86.10", "maze"
 
 # --- Configuration: MongoDB ---
-uri = "mongodb://root:root@localhost:27017/"
+uri = "mongodb://root:root@mongodb:27017/"
 databaseMongo = "pisid_maze"
 collection_setup_name = "setup"
 collection_corredores_name = "corredores"

@@ -7,6 +7,10 @@ class movesToMqtt(mongoToMqtt):
         self.n_marsamis_global = None
 
     def fetchInfoFromMongoDB(self):
+        if self.db is None:
+            print("⚠️ [FETCH] Erro: Falha ao carregar setup. Base de dados não inicializada.")
+            return
+
         self.corredores_col = self.db["corredores"]
         setup_collection = self.db["setup"]
         setup_doc = setup_collection.find_one()

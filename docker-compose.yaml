@@ -9,6 +9,8 @@ services:
       TZ: "Europe/Lisbon"
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -33,7 +35,7 @@ services:
       MONGO_INITDB_DATABASE: pisid_maze
       TZ: "Europe/Lisbon"
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
 
@@ -47,6 +49,8 @@ services:
       - "8081:80"
     volumes:
       - ./web:/var/www/html
+      - ./scripts:/var/www/scripts
+      - ./mazerun:/var/www/mazerun
     depends_on:
       - mysql
     environment:
@@ -54,3 +58,4 @@ services:
 
 volumes:
   mongo_data:
+  mysql_data:

@@ -48,7 +48,7 @@ class mongoToMqtt:
 
     def connectToMongoDB(self):
         #URI com as credenciais root
-        uri = "mongodb://root:root@localhost:27017/?authSource=admin"
+        uri = "mongodb://root:root@localhost:27018/?authSource=admin"
         timeout = 2000  # Tempo de espera - 2 segundos
         pisid = "pisid_maze"
 
@@ -56,7 +56,7 @@ class mongoToMqtt:
         try:
 
             #Estabelece a ligação, com um timeout.
-            self.clientMongoDB = pymongo.MongoClient(uri, timeout)
+            self.clientMongoDB = pymongo.MongoClient(uri, serverSelectionTimeoutMS=timeout)
     
             # Testar se o servidor responde.
             self.clientMongoDB.server_info() 
@@ -132,6 +132,10 @@ class mongoToMqtt:
         print(f"📤 Documento enviado no tópico {self.topic}: ID: {doc.get('idIncremental')}")
 
     def sendingLoop(self):  
+        if self.db is None:
+            print("⚠️ Erro: Conexão não estabelecida. Script terminado.")
+            return
+
         try:
             print("A iniciar envio de dados...")
             self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)

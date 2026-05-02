@@ -34,22 +34,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         // Call the SP (which internally checks for active simulations)
-        $stmt = $pdo->prepare("CALL Criar_Jogo(?, ?, CURRENT_TIMESTAMP, 0, ?)");
+        $stmt = $pdo->prepare("CALL Criar_Jogo(?, ?, CURRENT_TIMESTAMP, 0, ?, @id_sim)");
         $stmt->execute([$descricao, $equipa, $ac]);
 
-        $id_sim = $pdo->lastInsertId();
+        $res = $pdo->query("SELECT @id_sim AS id_sim")->fetch(PDO::FETCH_ASSOC);
+        $id_sim = $res['id_sim'];
 
         $pdo->commit();
 
-        // 2. Iniciar a simulação no Windows em background (now we know it is safe)
-        $cmdMazerun = "start /B mazerun.exe 2 --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883";
-        pclose(popen($cmdMazerun, "r"));
+        // 2. Iniciar a simulação (Note: .exe won't run in Linux/Docker)
+        $cmdMazerun = "../mazerun/mazerun.exe " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > /dev/null 2>&1 &";
+        exec($cmdMazerun);
 
         // 3. Esperar 1 segundo para a simulação inserir tabelas na Nuvem
         sleep(1);
 
         // 4. Execute python script para sincronizar Nuvem -> DB Local e Mongo
-        $cmd = escapeshellcmd("python ../scripts/nuvemToDBs/htmlNuvemToDatabases.py " .
+        $cmd = escapeshellcmd("python3 ../scripts/nuvemToDBs/htmlNuvemToDatabases.py " .
             escapeshellarg($id_sim) . " " .
             escapeshellarg($out_temp) . " " .
             escapeshellarg($out_som) . " " .
@@ -60,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             escapeshellarg($r_limite) . " " .
             escapeshellarg($amt_gatilhos));
 
-        $output = shell_exec($cmd) ?? '(sem output)';
+        $output = shell_exec("$cmd 2>&1") ?? '(sem output)';
 
         $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output);
 

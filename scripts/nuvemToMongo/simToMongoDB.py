@@ -30,8 +30,8 @@ class simToMongoDB:
 
     def connectToMongoDB(self):
 
-        #URI com as credenciais root:root e porto 27017 (padrão do MongoDB).
-        uri = "mongodb://root:root@localhost:27017/?authSource=admin"
+        #URI com as credenciais root:root e porto 27018 (padrão do MongoDB).
+        uri = "mongodb://root:root@localhost:27018/?authSource=admin"
         timeout = 2000  # Tempo de espera - 2 segundos.
         pisid = "pisid_maze"
 

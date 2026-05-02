@@ -43,7 +43,7 @@ def launch(title: str, script: str):
     # do comando 'start', que tem problemas com caminhos com espacos.
     # 'title TITULO & python script.py' define o titulo e corre o script.
     # Passar como string evita problemas de "double-quoting" internos do Python no Windows.
-    cmd_str = f'cmd /k "title {title} & "{PYTHON}" "{script}""'
+    cmd_str = f'cmd /k "set PYTHONIOENCODING=utf-8 & title {title} & "{PYTHON}" "{script}""'
     subprocess.Popen(
         cmd_str,
         creationflags=subprocess.CREATE_NEW_CONSOLE,

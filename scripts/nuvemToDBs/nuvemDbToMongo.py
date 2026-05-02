@@ -13,7 +13,7 @@ nuvempass="aluno"
 nuvemhost="194.210.86.10"
 nuvemDb="maze"
 
-uri = "mongodb://root:root@localhost:27017/"
+uri = "mongodb://root:root@localhost:27018/"
 timeout = 2000  # Tempo de espera - 2 segundos
 collection_setup = "setup"
 collection_corredores = "corredores"
