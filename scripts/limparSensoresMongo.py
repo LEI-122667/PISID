@@ -24,7 +24,13 @@ try:
 except Exception as e:
         print(f"Erro: {e}")
 
-collectionNames = db.list_collection_names()
-for collection in collectionNames:
-    db[collection].drop()
-    print(f"Collection '{collection}' dropped successfully.")
+count = 0
+colecoes = ["sensor_movimento", "sensor_temperatura", "sensor_ruido"]
+for colecao in colecoes:
+    docs = db[colecao].find({'Inserted': False})
+    for doc in docs:
+        db[colecao].update_one({'_id': doc['_id']}, {'$set': {'Inserted': True}})
+        count += 1
+        
+print(f"Total de documentos atualizados: {count}")
+    
