@@ -64,13 +64,13 @@ class mongoToMqtt:
                 is_master_result = client_teste.admin.command('ismaster')
                 
                 if is_master_result.get('ismaster'):
-                    print(f"✅ PRIMARY encontrado na porta {porta}!")
                     self.clientMongoDB = client_teste
                     self.db = self.clientMongoDB[pisid_db_name]
                     
+                    # ESTAS LINHAS GARANTEM QUE O RESTO DO CÓDIGO USA O CAMINHO NOVO:
                     self.collection = self.db[self.collection_name]
                     self.outlier_collection = self.db[self.outlier_collection_name]
-                    return True 
+                    return True
                 
                 client_teste.close()
                 
@@ -101,17 +101,16 @@ class mongoToMqtt:
                 for doc in documents_to_resend:
                     self.sendDoc(doc, client, label="Reenviado")
                             
-                sleep(5)
+                sleep(1)
 
             except (pymongo.errors.AutoReconnect, pymongo.errors.ServerSelectionTimeoutError, Exception) as e:
                 print(f"⚠️ Conexão perdida no loop de publicação: {e}")
-                print("🔎 A tentar localizar novo PRIMARY...")
                 
                 if self.connectToMongoDB():
                     print("✅ Reconexão bem-sucedida. A retomar processamento...")
+                    continue 
                 else:
-                    print("😴 Falha na reconexão. A aguardar 5s para nova tentativa...")
-                    sleep(5)
+                    sleep(1)
 
     def sendDoc(self, doc, client, label="Enviado"):
         try:

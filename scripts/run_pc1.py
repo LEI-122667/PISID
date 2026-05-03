@@ -60,8 +60,12 @@ def launch(title: str, script: str):
         cwd=os.path.dirname(script),
     )
     '''
-    
+    #Windows FIM
+
+
+
     #Para Linux do sebas:) (PopOs)
+    #'''
     cmd = [
     "gnome-terminal", 
     "--title", title, 
@@ -72,6 +76,9 @@ def launch(title: str, script: str):
     cmd, 
     cwd=os.path.dirname(script)
     )
+    #'''
+    #LINUX FIM
+
     print(f"[OK] Lancado: {title}")
     time.sleep(0.5)  # pequena pausa para nao sobrepor janelas
 
