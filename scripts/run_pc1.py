@@ -48,14 +48,37 @@ def launch(title: str, script: str):
 
     # Usa CREATE_NEW_CONSOLE para abrir uma janela separada sem depender
     # do comando 'start', que tem problemas com caminhos com espacos.
-    # 'title TITULO & python script.py' define o titulo e corre o script.
+    # 'title TITULO & python script.py' define o titulo e corre o scripts
     # Passar como string evita problemas de "double-quoting" internos do Python no Windows.
-    cmd_str = f'cmd /k "set PYTHONIOENCODING=utf-8 & title {title} & "{PYTHON}" "{script}""'
-    subprocess.Popen(
+    
+    #Para windows
+    '''
+    cmd = f'cmd /k "set PYTHONIOENCODING=utf-8 & title {title} & "{PYTHON}" "{script}""'
+        subprocess.Popen(
         cmd_str,
         creationflags=subprocess.CREATE_NEW_CONSOLE,
         cwd=os.path.dirname(script),
     )
+    '''
+    #Windows FIM
+
+
+
+    #Para Linux do sebas:) (PopOs)
+    #'''
+    cmd = [
+    "gnome-terminal", 
+    "--title", title, 
+    "--", "bash", "-c", f"python3 '{script}'; exec bash"
+    ]
+
+    subprocess.Popen(
+    cmd, 
+    cwd=os.path.dirname(script)
+    )
+    #'''
+    #LINUX FIM
+
     print(f"[OK] Lancado: {title}")
     time.sleep(0.5)  # pequena pausa para nao sobrepor janelas
 
