@@ -25,19 +25,72 @@ services:
     depends_on:
       - mysql
 
-  mongodb:
+  # --- MONGODB REPLICA SET ---
+  mongodb1:
     image: mongo:latest
-    container_name: mongodb
+    container_name: mongodb1
+    # --replSet define o nome do cluster, --bind_ip_all permite conexões externas
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
-      MONGO_INITDB_DATABASE: pisid_maze
       TZ: "Europe/Lisbon"
     ports:
       - "27018:27017"
     volumes:
-      - mongo_data:/data/db
+      - mongo1_data:/data/db
+
+  mongodb2:
+    image: mongo:latest
+    container_name: mongodb2
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    restart: always
+    environment:
+      TZ: "Europe/Lisbon"
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo2_data:/data/db
+
+  mongodb3:
+    image: mongo:latest
+    container_name: mongodb3
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    restart: always
+    environment:
+      TZ: "Europe/Lisbon"
+    ports:
+      - "27020:27017"
+    volumes:
+      - mongo3_data:/data/db
+
+  # Serviço temporário para configurar a replicação automaticamente
+  mongo-init:
+    image: mongo:latest
+    container_name: mongo-init
+    depends_on:
+      - mongodb1
+      - mongodb2
+      - mongodb3
+    entrypoint: >
+      bash -c "sleep 15;
+      mongosh --host mongodb1:27017 --eval '
+        try {
+          if (rs.status().ok) {
+            print(\"Replica Set já configurado. A sair...\");
+            quit(0);
+          }
+        } catch (e) {
+          print(\"Configurando Replica Set...\");
+          rs.initiate({
+            _id: \"rs0\",
+            members: [
+              {_id: 0, host: \"mongodb1:27017\", priority: 2},
+              {_id: 1, host: \"mongodb2:27017\", priority: 1},
+              {_id: 2, host: \"mongodb3:27017\", priority: 1}
+            ]
+          });
+        }
+      '"
 
   php:
     build:
@@ -53,9 +106,12 @@ services:
       - ./mazerun:/var/www/mazerun
     depends_on:
       - mysql
+      - mongodb1
     environment:
       TZ: "Europe/Lisbon"
 
 volumes:
-  mongo_data:
   mysql_data:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:

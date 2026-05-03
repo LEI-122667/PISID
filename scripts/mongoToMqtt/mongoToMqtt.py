@@ -14,9 +14,8 @@ class mongoToMqtt:
         self.collection_name = collection_name
         self.outlier_collection_name = outlier_collection_name
         self.setMqtt(topic)
-        if not self.collection == 'sensor_movimento':
+        if self.collection_name != 'sensor_movimento':
             self.janela = deque(maxlen=5)
-
 
     def getJanelaAverage(self):
         if not self.janela:
@@ -31,86 +30,108 @@ class mongoToMqtt:
         self.topic = topic
         
         # Inicializar o cliente MQTT dentro do objeto
-        self.mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, transport="tcp")
+        self.mqtt_client = mqtt.Client()
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_publish = self.on_publish_callback
         self.motivo_outlier = ""
 
-    def on_connect(self, client, userdata, flags, reason_code, properties):
-        if reason_code == 0:
+    def on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
             print(f"✅ MQTT: Ligado ao Broker {self.mqtt_broker}")
         else:
-            print(f"MQTT: Erro código {reason_code}")
+            print(f"MQTT: Erro código {rc}")
 
-    def on_publish_callback(self, client, userdata, mid, reason_code, properties):
+    def on_publish_callback(self, client, userdata, mid):
         # Esta função é chamada internamente pela biblioteca após cada envio
         pass
 
     def connectToMongoDB(self):
-        #URI com as credenciais root
-        uri = "mongodb://root:root@localhost:27018/?authSource=admin"
-        timeout = 2000  # Tempo de espera - 2 segundos
-        pisid = "pisid_maze"
+        mongo_nodes = [27018, 27019, 27020]
+        pisid_db_name = "pisid_maze"
+        
+        print("🔎 À procura do nó PRIMARY no Cluster (sem autenticação)...")
+        
+        for porta in mongo_nodes:
+            try:
+                uri = f"mongodb://localhost:{porta}/"
+                
+                client_teste = pymongo.MongoClient(
+                    uri, 
+                    directConnection=True, 
+                    serverSelectionTimeoutMS=2000
+                )
+                
+                is_master_result = client_teste.admin.command('ismaster')
+                
+                if is_master_result.get('ismaster'):
+                    self.clientMongoDB = client_teste
+                    self.db = self.clientMongoDB[pisid_db_name]
+                    
+                    # ESTAS LINHAS GARANTEM QUE O RESTO DO CÓDIGO USA O CAMINHO NOVO:
+                    self.collection = self.db[self.collection_name]
+                    self.outlier_collection = self.db[self.outlier_collection_name]
+                    return True
+                
+                client_teste.close()
+                
+            except Exception:
+                continue
+        
+        print("❌ ERRO: Não foi possível encontrar um nó PRIMARY ativo.")
+        return False
 
-        #Try except caso mongoDB não esteja a correr ou as credenciais estejam erradas.
-        try:
-
-            #Estabelece a ligação, com um timeout.
-            self.clientMongoDB = pymongo.MongoClient(uri, serverSelectionTimeoutMS=timeout)
-    
-            # Testar se o servidor responde.
-            self.clientMongoDB.server_info() 
-            print("\nLigação ao MongoDB estabelecida com sucesso!\n")
-
-            self.db = self.clientMongoDB[pisid]
-            self.collection = self.db[self.collection_name]
-            self.outlier_collection = self.db[self.outlier_collection_name]
-
-        except Exception as e:
-             print(f"Erro: {e}")
-
-    def publishData(self,  client):
+    def publishData(self, client):
         while True:
             try:
-                
-                # Busca documentos não processados ordenados por tempo (ObjectId)
                 query = {"inserted": False, "timeSent": None}
-                
-                # FIX 3: Sort 1 (Ascending) so the cursor walks toward new data
                 unread_documents = self.collection.find(query).sort("idIncremental", 1)
                 
                 for doc in unread_documents:
-                    if (self.isOutlier(doc)):
+                    if self.isOutlier(doc):
                         self.handleOutlier(doc)
                     else:
-                        self.sendDoc(doc, client)
+                        self.sendDoc(doc, client, label="Enviado")
+
 
                 retry_limit = datetime.now(timezone.utc) - timedelta(seconds=3)
-                retry_query = {"inserted": False, "timeSent": {"$lte": retry_limit}}
+                retry_query = {"inserted": False, "timeSent": {"$ne": None, "$lte": retry_limit}}
                 
                 documents_to_resend = self.collection.find(retry_query)
                 
                 for doc in documents_to_resend:
-                    self.resend(doc)
+                    self.sendDoc(doc, client, label="Reenviado")
                             
                 sleep(1)
-            except Exception as e:
-                print(f"Erro ao publicar ruído: {e}")
-                sleep(1)
 
-    def resend(self, doc):
+            except (pymongo.errors.AutoReconnect, pymongo.errors.ServerSelectionTimeoutError, Exception) as e:
+                print(f"⚠️ Conexão perdida no loop de publicação: {e}")
+                
+                if self.connectToMongoDB():
+                    print("✅ Reconexão bem-sucedida. A retomar processamento...")
+                    continue 
+                else:
+                    sleep(1)
+
+    def sendDoc(self, doc, client, label="Enviado"):
         try:
             payload_doc = doc.copy()
             payload_doc["_id"] = None
-            time = datetime.now(timezone.utc)
-            payload_doc["timeSent"] = time 
-            payload = json.dumps(payload_doc, default=str)
-            self.mqtt_client.publish(self.topic, payload, qos=1)
-            self.collection.update_one( {"_id": doc["_id"]}, {"$set": {"timeSent": time}})
-            print(f"🔄 Documento reenviado no tópico {self.topic}: ID: {doc.get('idIncremental')}")
-        
+            
+            time_now = datetime.now(timezone.utc)
+            payload_doc["timeSent"] = time_now
+            
+            payload = json.dumps(payload_doc, default=str)   
+            client.publish(self.topic, payload, qos=1)
+            
+            self.collection.update_one(
+                {"_id": doc["_id"]}, 
+                {"$set": {"timeSent": time_now}}
+            )
+            
+            icon = "📤" if label == "Enviado" else "🔄"
+            print(f"{icon} Documento {label}: ID: {doc.get('idIncremental')}")
         except Exception as e:
-            print(f"Erro ao reenviar movimento: {e}")
+            raise e
 
     def isOutlier(self, doc):
         pass # Depende do topico
@@ -121,16 +142,6 @@ class mongoToMqtt:
         self.outlier_collection.insert_one(doc)
         self.collection.delete_one({"_id": doc["_id"]})
     
-    def sendDoc(self, doc, client):
-        payload_doc = doc.copy()
-        payload_doc["_id"] = None
-        time = datetime.now(timezone.utc)
-        payload_doc["timeSent"] = time
-        payload = json.dumps(payload_doc, default=str)   
-        client.publish(self.topic, payload, qos=1)
-        self.collection.update_one( {"_id": doc["_id"]}, {"$set": {"timeSent": time}})
-        print(f"📤 Documento enviado no tópico {self.topic}: ID: {doc.get('idIncremental')}")
-
     def sendingLoop(self):  
         if self.db is None:
             print("⚠️ Erro: Conexão não estabelecida. Script terminado.")
