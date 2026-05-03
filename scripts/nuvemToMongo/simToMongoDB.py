@@ -24,37 +24,53 @@ class simToMongoDB:
         self.topic = topic
         
         # Inicializar o cliente MQTT dentro do objeto
-        self.mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        self.mqtt_client = mqtt.Client()
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
 
 
     def connectToMongoDB(self):
+        """
+        Tenta encontrar o nó PRIMARY dentro do cluster local (Replica Set).
+        As portas padrão configuradas são 27018, 27019 e 27020.
+        """
+        mongo_nodes = [27018, 27019, 27020]
+        pisid_db_name = "pisid_maze"
+        
+        print("🔎 À procura do nó PRIMARY no Cluster...")
+        
+        for porta in mongo_nodes:
+            try:
+                # Criamos um cliente temporário para testar a porta
+                # directConnection=True é essencial para falar com um nó específico
+                client_teste = pymongo.MongoClient(
+                    'localhost', 
+                    porta, 
+                    directConnection=True, 
+                    serverSelectionTimeoutMS=2000
+                )
+                
+                # O comando ismaster diz-nos se este nó é o que aceita escritas (Primary)
+                is_master_result = client_teste.admin.command('ismaster')
+                
+                if is_master_result.get('ismaster'):
+                    print(f"✅ PRIMARY encontrado na porta {porta}!")
+                    self.clientMongoDB = client_teste
+                    self.db = self.clientMongoDB[pisid_db_name]
+                    return True # Ligação estabelecida com sucesso
+                
+                client_teste.close()
+                
+            except Exception:
+                # Se falhar nesta porta, apenas ignoramos e tentamos a próxima
+                continue
+        
+        print("❌ ERRO: Não foi possível encontrar um nó PRIMARY ativo.")
+        return False
 
-        #URI com as credenciais root:root e porto 27018 (padrão do MongoDB).
-        uri = "mongodb://root:root@localhost:27018/?authSource=admin"
-        timeout = 2000  # Tempo de espera - 2 segundos.
-        pisid = "pisid_maze"
+    def on_connect(self, client, userdata, flags, rc):
 
-        #Try except caso mongoDB não esteja a correr ou as credenciais estejam erradas.
-        try:
-            #Estabelece a ligação, com um timeout.
-            print("A tentar estabelecer ligação ao MongoDB...")
-            self.clientMongoDB = pymongo.MongoClient(uri,serverSelectionTimeoutMS=timeout)
-    
-            # Testar se o servidor responde.
-            self.clientMongoDB.server_info() 
-            print("\nLigação ao MongoDB estabelecida com sucesso!\n")
-
-            self.db = self.clientMongoDB[pisid]
-
-        except Exception as e:
-            print(f"Erro: {e}")
-
-
-    def on_connect(self, client, userdata, flags, reason_code, properties):
-
-        if reason_code == 0:
+        if rc == 0:
             print(f"✅ MQTT: Ligado ao Broker {self.mqtt_broker}")
             try:
                 # O .strip() remove qualquer lixo invisível (espaços, tabs, \r)
@@ -64,7 +80,7 @@ class simToMongoDB:
             except Exception as e:
                 print(f"❌ Erro ao subscrever a {self.topic}: {e}")
         else:
-            print(f"MQTT: Erro código {reason_code}")
+            print(f"MQTT: Erro código {rc} ao conectar ao broker")
 
     def on_message(self, client, userdata, msg):
         #Defini-se na classe filha, para assim processar os dados de forma diferente em função do tópico.
@@ -105,7 +121,7 @@ class simToMongoDB:
         if last_id is None:
             ultimo_registro = list(colecao.find().sort("idIncremental", -1).limit(1))
             if ultimo_registro:
-                last_id = ultimo_registro[0].get('idIncremental', 0)
+                last_id = int(ultimo_registro[0].get('idIncremental', 0))
             else:
                 last_id = 0
 

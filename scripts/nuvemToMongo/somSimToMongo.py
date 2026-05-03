@@ -9,7 +9,6 @@ class somSimToMongo(simToMongoDB):
 
     def on_message(self, client, userdata, msg):
         try:
-            # Converter a mensagem recebida para dicionário Python
             raw_payload = msg.payload.decode().replace("'", '"')
             payload = json.loads(raw_payload)
 
@@ -24,12 +23,27 @@ class somSimToMongo(simToMongoDB):
                 tipo = "DESCONHECIDO"
                 return
 
-            payload['inserted'] = False
-            payload['timeSent'] = None            
             payload['idIncremental'] = self.getId("sensor_ruido")
+            payload['inserted'] = False
+            payload['timeSent'] = None
 
-            colecao.insert_one(payload)
-            print(f"💾 [{tipo}] Jogador {payload.get('Player')}: ID: {payload.get('idIncremental')} Sound: {payload.get('Sound')}")
+            success = False
+            while not success:
+                try:
+                    
+                    colecao = self.db['sensor_ruido']
+                    colecao.insert_one(payload)
+                    print(f"💾 [{tipo}] Jogador {payload.get('Player')}: ID: {payload.get('idIncremental')} Sound: {payload.get('Sound')}")
+                    success = True
+                    
+                except Exception as e:
+                    print(f"⚠️ Erro de conexão detetado: {e}. A tentar reconectar...")
+                    if self.connectToMongoDB():
+                        print("✅ Reconectado com sucesso. A repetir inserção...")
+                    else:
+                        print("❌ Falha crítica: Não foi possível encontrar novo PRIMARY.")
+                        break
+
 
         except Exception as e:
             print(f"Erro ao processar mensagem no tópico {msg.topic}: {e}")

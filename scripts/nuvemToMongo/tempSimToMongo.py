@@ -9,12 +9,10 @@ class tempSimToMongo(simToMongoDB):
 
     def on_message(self, client, userdata, msg):
         try:
-            # Converter a mensagem recebida para dicionário Python
             raw_payload = msg.payload.decode().replace("'", '"')
             payload = json.loads(raw_payload)
 
             topico = msg.topic
-            print(f"📥 Mensagem recebida no tópico {topico}: {payload}")
 
             if "temp" in topico:
                 colecao = self.db['sensor_temperatura']
@@ -24,15 +22,27 @@ class tempSimToMongo(simToMongoDB):
                 colecao = self.db['dados_desconecidos']
                 tipo = "DESCONHECIDO"
                 return
-
+            
+            payload['idIncremental'] = self.getId("sensor_temperatura")
             payload['inserted'] = False
             payload['timeSent'] = None
-            payload['idIncremental'] = self.getId("sensor_temperatura")
 
-
-            colecao.insert_one(payload)
-            print(f"💾 [{tipo}] Jogador {payload.get('Player')}: ID: {payload.get('idIncremental')} Temp: {payload.get('Temperature')}")
-
+            success = False
+            while not success:
+                try:
+                    
+                    colecao = self.db['sensor_temperatura']
+                    colecao.insert_one(payload)
+                    print(f"💾 [{tipo}] Jogador {payload.get('Player')}: ID: {payload.get('idIncremental')} Temp: {payload.get('Temperature')}")
+                    success = True
+                    
+                except Exception as e:
+                    print(f"⚠️ Erro de conexão detetado: {e}. A tentar reconectar...")
+                    if self.connectToMongoDB():
+                        print("✅ Reconectado com sucesso. A repetir inserção...")
+                    else:
+                        print("❌ Falha crítica: Não foi possível encontrar novo PRIMARY.")
+                        break
 
         except Exception as e:
             print(f"Erro ao processar mensagem no tópico {msg.topic}: {e}")
