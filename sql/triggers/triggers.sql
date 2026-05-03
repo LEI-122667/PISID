@@ -8,6 +8,8 @@ DROP TRIGGER IF EXISTS Pontuacao_gatilho;
 DROP TRIGGER IF EXISTS Alerta_Odd_Even;
 DROP TRIGGER IF EXISTS Alerta_Odd_Even_Update;
 DROP TRIGGER IF EXISTS Alerta_Odd_Even_Insert;
+DROP TRIGGER IF EXISTS Finalizar_Simulacao_Temperatura;
+DROP TRIGGER IF EXISTS Finalizar_Simulacao_Som;
 
 -- ─────────────────────────────────────────────
 -- 1. Alerta_Temperatura
@@ -56,7 +58,7 @@ BEGIN
     IF (NEW.Temperatura >= (limiteSuperior - alertaSuperior) OR NEW.Temperatura <= (limiteInferior + alertaInferior)) AND arcondicionado = 0 THEN
     
         INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'AtivacaoGatilho', 'Outlier na temperatura', NEW.Hora);
+        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'Temperatura', 'Outlier na temperatura', NEW.Hora);
         
     END IF;
 
@@ -102,7 +104,7 @@ BEGIN
     IF NEW.Som >= (limite - alerta) AND corredoresAbertos > 0 THEN
        
         INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao,'2', NEW.Som,'AtivacaoGatilho','Outlier no ruído',NEW.Hora);
+        VALUES (NEW.IDSimulacao,'2', NEW.Som,'Som','Outlier no ruído',NEW.Hora);
         
     END IF;
 
@@ -186,9 +188,9 @@ BEGIN
     SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
 
     IF v_ativo = TRUE THEN
-        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 AND NEW.Gatilho > 0 THEN
             INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
-            VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even', '0', NOW(), NULL);
+            VALUES (NEW.IDSimulacao, NEW.Sala, 'Movimento', 'odd = even', '0', NOW(), NULL);
         END IF;
     END IF;
 END$$
@@ -201,10 +203,71 @@ BEGIN
     SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
 
     IF v_ativo = TRUE THEN
-        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 AND NEW.Gatilho > 0 THEN
             INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
-            VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even', '0', NOW(), NULL);
+            VALUES (NEW.IDSimulacao, NEW.Sala, 'Movimento', 'odd = even', '0', NOW(), NULL);
         END IF;
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- ─────────────────────────────────────────────
+-- 6. Finalizar_Simulacao_Temperatura
+-- ─────────────────────────────────────────────
+DELIMITER $$
+
+CREATE TRIGGER Finalizar_Simulacao_Temperatura
+AFTER INSERT ON Temperatura
+FOR EACH ROW
+BEGIN
+    DECLARE normalTemp DECIMAL(6,2);
+    DECLARE tempHighTol DECIMAL(6,2);
+    DECLARE tempLowTol DECIMAL(6,2);
+    DECLARE limiteSuperior DECIMAL(6,2);
+    DECLARE limiteInferior DECIMAL(6,2);
+
+    SELECT NormalTemperature, TemperatureVarHighToleration, TemperatureVarLowToleration
+    INTO normalTemp, tempHighTol, tempLowTol
+    FROM SetupMaze
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+
+    SET limiteSuperior = normalTemp + tempHighTol;
+    SET limiteInferior = normalTemp - tempLowTol;
+
+    IF NEW.Temperatura >= limiteSuperior OR NEW.Temperatura <= limiteInferior THEN
+        UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
+        
+        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'Temperatura', 'Simulação terminada: Limite de temperatura atingido!', NEW.Hora);
+    END IF;
+END$$
+
+-- ─────────────────────────────────────────────
+-- 7. Finalizar_Simulacao_Som
+-- ─────────────────────────────────────────────
+CREATE TRIGGER Finalizar_Simulacao_Som
+AFTER INSERT ON Som
+FOR EACH ROW
+BEGIN
+    DECLARE normalNoise DECIMAL(6,2);
+    DECLARE noiseTol DECIMAL(6,2);
+    DECLARE limite DECIMAL(6,2);
+
+    SELECT NormalNoise, NoiseVarToleration
+    INTO normalNoise, noiseTol
+    FROM SetupMaze
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+
+    SET limite = normalNoise + noiseTol;
+
+    IF NEW.Som >= limite THEN
+        UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
+        
+        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        VALUES (NEW.IDSimulacao, '2', NEW.Som, 'Som', 'Simulação terminada: Limite de ruído atingido!', NEW.Hora);
     END IF;
 END$$
 

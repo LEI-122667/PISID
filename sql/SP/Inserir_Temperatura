@@ -44,33 +44,10 @@ BEGIN
                 SELECT -1 AS Result;
 
             ELSE
-                -- Procurar última leitura por MongoId
-                SELECT Temperatura INTO v_UltimaTemp 
-                FROM Temperatura 
-                WHERE IDSimulacao = v_IDSimulacao 
-                ORDER BY MongoId DESC 
-                LIMIT 1;
-
-                -- Lógica do Ar Condicionado (Dado Inválido se violar a regra)
-                IF v_UltimaTemp IS NOT NULL THEN
-                    
-                    -- Regra: AC Ligado -> Não pode subir | AC Desligado -> Não pode descer
-                    IF (v_ArCondicionado = TRUE AND p_Temperatura > v_UltimaTemp) OR
-                       (v_ArCondicionado = FALSE AND p_Temperatura < v_UltimaTemp) THEN
-                        SELECT -1 AS Result;
-                    
-                    ELSE
-                        INSERT INTO Temperatura (IDSimulacao, Hora, Temperatura, MongoId)
-                        VALUES (v_IDSimulacao, p_Hora, p_Temperatura, p_MongoId);
-                        SELECT 1 AS Result;
-                    END IF;
-
-                ELSE
-                    -- Primeira leitura da simulação
-                    INSERT INTO Temperatura (IDSimulacao, Hora, Temperatura, MongoId)
-                    VALUES (v_IDSimulacao, p_Hora, p_Temperatura, p_MongoId);
-                    SELECT 1 AS Result;
-                END IF;
+                -- Tentativa de Inserção (Removida a lógica de validação do AC para permitir dados com delay)
+                INSERT INTO Temperatura (IDSimulacao, Hora, Temperatura, MongoId)
+                VALUES (v_IDSimulacao, p_Hora, p_Temperatura, p_MongoId);
+                SELECT 1 AS Result;
             END IF;
         END IF;
     END IF;

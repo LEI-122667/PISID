@@ -42,7 +42,7 @@ BEGIN
     IF (NEW.Temperatura >= (limiteSuperior - alertaSuperior) OR NEW.Temperatura <= (limiteInferior + alertaInferior)) AND arcondicionado = 0 THEN
     
         INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'AtivacaoGatilho', 'Outlier na temperatura', NEW.Hora);
+        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'Temperatura', 'Outlier na temperatura', NEW.Hora);
         
     END IF;
 

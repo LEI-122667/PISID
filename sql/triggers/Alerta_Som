@@ -33,7 +33,7 @@ BEGIN
     IF NEW.Som >= (limite - alerta) AND corredoresAbertos > 0 THEN
        
         INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao,'2', NEW.Som,'AtivacaoGatilho','Outlier no ruído',NEW.Hora);
+        VALUES (NEW.IDSimulacao,'2', NEW.Som,'Som','Outlier no ruído',NEW.Hora);
         
     END IF;
 

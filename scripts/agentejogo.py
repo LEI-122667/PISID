@@ -36,6 +36,9 @@ MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_TOPIC_ACT = "pisid_mazeact"
 
+# Lock global para garantir que alertas de som são processados sequencialmente
+som_lock = threading.Lock()
+
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 try:
     mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
@@ -56,59 +59,60 @@ def get_connection():
     return mysql.connector.connect(**db_config)
 
 def handle_som_alert(id_simulacao, config, setup):
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Close all corridors
-        print("[Som] Fechar todos os corredores...")
-        cursor.callproc("Fechar_Abrir_TodosCorredores", (1,))
-        for _ in cursor.stored_results(): pass
-        conn.commit()
-        
-        send_mqtt_action({"Type": "CloseAllDoor", "Player": 2})
-
-        time_fechar = config['time_fecharcorredores']
-        ruido_limite = float(config['ruidolimite_fecharcorredores'])
-
-        if time_fechar > 0:
-            print(f"[Som] Aguardar {time_fechar} segundos antes de abrir...")
-            time.sleep(time_fechar)
-        elif ruido_limite > 0:
-            # Assuming fraction like 0.8
-            total_noise = float(setup['NormalNoise']) + float(setup['NoiseVarToleration'])
+    with som_lock:
+        try:
+            conn = get_connection()
+            cursor = conn.cursor(dictionary=True)
             
-            if ruido_limite > 1.0:
-                ruido_limite = ruido_limite / 100.0
+            # Close all corridors
+            print("[Som] Fechar todos os corredores...")
+            cursor.callproc("Fechar_Abrir_TodosCorredores", (1,))
+            for _ in cursor.stored_results(): pass
+            conn.commit()
+            
+            send_mqtt_action({"Type": "CloseAllDoor", "Player": 2})
+
+            time_fechar = config['time_fecharcorredores']
+            ruido_limite = float(config['ruidolimite_fecharcorredores'])
+
+            if time_fechar > 0:
+                print(f"[Som] Aguardar {time_fechar} segundos antes de abrir...")
+                time.sleep(time_fechar)
+            elif ruido_limite > 0:
+                # Assuming fraction like 0.8
+                total_noise = float(setup['NormalNoise']) + float(setup['NoiseVarToleration'])
                 
-            threshold = total_noise * ruido_limite
-            print(f"[Som] Aguardar som descer até {threshold:.2f} (Limite: {ruido_limite*100}%)")
+                if ruido_limite > 1.0:
+                    ruido_limite = ruido_limite / 100.0
+                    
+                threshold = total_noise * ruido_limite
+                print(f"[Som] Aguardar som descer até {threshold:.2f} (Limite: {ruido_limite*100}%)")
+                
+                while True:
+                    time.sleep(2)
+                    cursor.execute("SELECT Som FROM Som WHERE IDSimulacao = %s ORDER BY IDSom DESC LIMIT 1", (id_simulacao,))
+                    row = cursor.fetchone()
+                    if row:
+                        current_som = float(row['Som'])
+                        if current_som <= threshold:
+                            print(f"[Som] Som desceu para {current_som}. Abrir corredores.")
+                            break
+                    else:
+                        # No readings yet? Wait.
+                        pass
+
+            print("[Som] Abrir todos os corredores...")
+            cursor.callproc("Fechar_Abrir_TodosCorredores", (0,))
+            for _ in cursor.stored_results(): pass
+            conn.commit()
             
-            while True:
-                time.sleep(2)
-                cursor.execute("SELECT Som FROM Som WHERE IDSimulacao = %s ORDER BY IDSom DESC LIMIT 1", (id_simulacao,))
-                row = cursor.fetchone()
-                if row:
-                    current_som = float(row['Som'])
-                    if current_som <= threshold:
-                        print(f"[Som] Som desceu para {current_som}. Abrir corredores.")
-                        break
-                else:
-                    # No readings yet? Wait.
-                    pass
+            send_mqtt_action({"Type": "OpenAllDoor", "Player": 2})
 
-        print("[Som] Abrir todos os corredores...")
-        cursor.callproc("Fechar_Abrir_TodosCorredores", (0,))
-        for _ in cursor.stored_results(): pass
-        conn.commit()
-        
-        send_mqtt_action({"Type": "OpenAllDoor", "Player": 2})
-
-    except Exception as e:
-        print(f"[Som Error] {e}")
-    finally:
-        if 'conn' in locals() and conn.is_connected():
-            conn.close()
+        except Exception as e:
+            print(f"[Som Error] {e}")
+        finally:
+            if 'conn' in locals() and conn.is_connected():
+                conn.close()
 
 def run_agente():
     print("Iniciar Agente Jogo...")
