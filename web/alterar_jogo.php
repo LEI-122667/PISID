@@ -2,7 +2,7 @@
 session_start();
 require_once 'db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['tipo'] !== 'Criador') {
+if (!isset($_SESSION['user_id']) || empty($_SESSION['permissao_criar_jogo'])) {
     header('Location: dashboard.php');
     exit;
 }
@@ -28,12 +28,12 @@ if ($simulacao['Ativo']) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descricao = $_POST['descricao'];
     $pontuacao = (int)$_POST['pontuacao'];
-    $ac = isset($_POST['ar_condicionado']) ? 1 : 0;
 
     try {
         // Direct update to bypass MySQL USER() check in the SP which fails with PDO root
-        $stmt = $pdo->prepare("UPDATE Simulacao SET Descricao = ?, Pontuacao = ?, ArCondicionado = ? WHERE IDSimulacao = ?");
-        $stmt->execute([$descricao, $pontuacao, $ac, $id_simulacao]);
+        // ArCondicionado is forced to 0 as it's no longer a user choice
+        $stmt = $pdo->prepare("UPDATE Simulacao SET Descricao = ?, Pontuacao = ?, ArCondicionado = 0 WHERE IDSimulacao = ?");
+        $stmt->execute([$descricao, $pontuacao, $id_simulacao]);
         
         $success = "Simulação atualizada com sucesso!";
         
@@ -80,12 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label>Pontuação</label>
                     <input type="number" name="pontuacao" value="<?= htmlspecialchars($simulacao['Pontuacao']) ?>" required>
                 </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" name="ar_condicionado" style="width: auto; display: inline-block;" <?= $simulacao['ArCondicionado'] ? 'checked' : '' ?>>
-                        Ar Condicionado Ligado
-                    </label>
-                </div>
+
                 <button type="submit" class="btn">Atualizar Jogo</button>
             </form>
         </div>

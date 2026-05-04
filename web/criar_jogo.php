@@ -2,7 +2,7 @@
 session_start();
 require_once 'db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['tipo'] !== 'Criador') {
+if (!isset($_SESSION['user_id']) || empty($_SESSION['permissao_criar_jogo'])) {
     header('Location: dashboard.php');
     exit;
 }
@@ -10,7 +10,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['tipo'] !== 'Criador') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descricao = $_POST['descricao'];
     $equipa = $_POST['equipa'];
-    $ac = isset($_POST['ar_condicionado']) ? 1 : 0;
 
     // Params for script
     $out_temp = $_POST['outliers_temp'];
@@ -34,17 +33,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         // Call the SP (which internally checks for active simulations)
-        $stmt = $pdo->prepare("CALL Criar_Jogo(?, ?, CURRENT_TIMESTAMP, 0, ?, @id_sim)");
-        $stmt->execute([$descricao, $equipa, $ac]);
+        // Passing 0 for ArCondicionado since it was removed
+        $stmt = $pdo->prepare("CALL Criar_Jogo(?, ?, CURRENT_TIMESTAMP, 0, 0, @id_sim)");
+        $stmt->execute([$descricao, $equipa]);
 
         $res = $pdo->query("SELECT @id_sim AS id_sim")->fetch(PDO::FETCH_ASSOC);
         $id_sim = $res['id_sim'];
 
         $pdo->commit();
 
-        // 2. Iniciar a simulação (Note: .exe won't run in Linux/Docker)
-        $cmdMazerun = "../mazerun/mazerun.exe " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > /dev/null 2>&1 &";
-        exec($cmdMazerun);
+        // 2. Iniciar a simulação
+        // Note: Windows needs a different background execution syntax than Linux/Docker
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows command for background execution
+            $cmdMazerun = "start /B ..\\mazerun\\mazerun.exe " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > NUL 2>&1";
+            pclose(popen($cmdMazerun, "r"));
+        } else {
+            // Linux/Docker
+            $cmdMazerun = "../mazerun/mazerun.exe " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > /dev/null 2>&1 &";
+            exec($cmdMazerun);
+        }
 
         // 3. Esperar 1 segundo para a simulação inserir tabelas na Nuvem
         sleep(1);
@@ -112,14 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label>Equipa</label>
                             <input type="number" name="equipa" required>
                         </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" name="ar_condicionado"
-                                    style="width: auto; display: inline-block;">
-                                Ar Condicionado Ligado
-                            </label>
                         </div>
-                    </div>
 
                     <div>
                         <h3>Configuração do Jogo</h3>

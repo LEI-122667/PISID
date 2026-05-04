@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['tipo'] = $user['Tipo'];
         $_SESSION['email'] = $user['Email'];
         $_SESSION['equipa'] = $user['Equipa'];
+        $_SESSION['permissao_criar_jogo'] = $user['permissaoCriarJogo'];
         
         header('Location: dashboard.php');
         exit;

@@ -38,6 +38,8 @@ GRANT SELECT ON bd_pisid.Mensagens          TO 'Android';
 GRANT SELECT ON bd_pisid.Temperatura        TO 'Android';
 GRANT SELECT ON bd_pisid.OcupacaoLabirinto  TO 'Android';
 GRANT SELECT ON bd_pisid.Som                TO 'Android';
+GRANT SELECT ON bd_pisid.Simulacao          TO 'Android';
+GRANT SELECT ON bd_pisid.ConfigJogo         TO 'Android';
 
 -- ─────────────────────────────────────────────
 -- AgentSimulacao

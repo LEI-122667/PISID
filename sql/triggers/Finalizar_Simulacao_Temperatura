@@ -1,0 +1,32 @@
+DROP TRIGGER IF EXISTS Finalizar_Simulacao_Temperatura;
+
+DELIMITER $$
+
+CREATE TRIGGER Finalizar_Simulacao_Temperatura
+AFTER INSERT ON Temperatura
+FOR EACH ROW
+BEGIN
+    DECLARE normalTemp DECIMAL(6,2);
+    DECLARE tempHighTol DECIMAL(6,2);
+    DECLARE tempLowTol DECIMAL(6,2);
+    DECLARE limiteSuperior DECIMAL(6,2);
+    DECLARE limiteInferior DECIMAL(6,2);
+
+    SELECT NormalTemperature, TemperatureVarHighToleration, TemperatureVarLowToleration
+    INTO normalTemp, tempHighTol, tempLowTol
+    FROM SetupMaze
+    WHERE IDSimulacao = NEW.IDSimulacao
+    LIMIT 1;
+
+    SET limiteSuperior = normalTemp + tempHighTol;
+    SET limiteInferior = normalTemp - tempLowTol;
+
+    IF NEW.Temperatura >= limiteSuperior OR NEW.Temperatura <= limiteInferior THEN
+        UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
+        
+        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'Temperatura', 'Simulação terminada: Limite de temperatura atingido!', NEW.Hora);
+    END IF;
+END$$
+
+DELIMITER ;

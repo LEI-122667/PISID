@@ -24,7 +24,7 @@ $tipo = $_SESSION['tipo'];
             <?php if ($tipo === 'Admin'): ?>
                 <a href="criar_utilizador.php">Criar Utilizador</a>
             <?php endif; ?>
-            <?php if ($tipo === 'Criador'): ?>
+            <?php if (!empty($_SESSION['permissao_criar_jogo'])): ?>
                 <a href="criar_jogo.php">Criar Jogo</a>
             <?php endif; ?>
             <a href="logout.php">Sair</a>
@@ -47,7 +47,7 @@ $tipo = $_SESSION['tipo'];
                 </div>
                 <?php endif; ?>
 
-                <?php if ($tipo === 'Criador'): ?>
+                <?php if (!empty($_SESSION['permissao_criar_jogo'])): ?>
                 <div class="glass-panel" style="background: rgba(30,41,59,0.4)">
                     <h3>Gestão de Jogos</h3>
                     <p style="margin-bottom: 1rem; color: var(--text-secondary);">Inicie novas simulações e altere parâmetros.</p>

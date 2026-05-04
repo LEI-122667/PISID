@@ -12,9 +12,9 @@ BEGIN
     SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
 
     IF v_ativo = TRUE THEN
-        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 AND NEW.Gatilho > 0 THEN
             INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
-            VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even', '0', NOW(), NULL);
+            VALUES (NEW.IDSimulacao, NEW.Sala, 'Movimento', 'odd = even', '0', NOW(), NULL);
         END IF;
     END IF;
 END$$
@@ -27,9 +27,9 @@ BEGIN
     SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
 
     IF v_ativo = TRUE THEN
-        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 THEN
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 AND NEW.Gatilho > 0 THEN
             INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
-            VALUES (NEW.IDSimulacao, NEW.Sala, 'AtivacaoGatilho', 'odd = even', '0', NOW(), NULL);
+            VALUES (NEW.IDSimulacao, NEW.Sala, 'Movimento', 'odd = even', '0', NOW(), NULL);
         END IF;
     END IF;
 END$$

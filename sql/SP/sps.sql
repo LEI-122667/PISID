@@ -202,35 +202,87 @@ DELIMITER $$
 
 CREATE PROCEDURE Criar_Utilizador(
     IN p_Nome           VARCHAR(100),
-    IN p_Telemovel      VARCHAR(12),
-    IN p_Tipo           ENUM('Admin','Criador','Leitor'),
-    IN p_Email          VARCHAR(50),
+    IN p_Tipo           ENUM('Admin','User','Android'),
+    IN p_Email          VARCHAR(150),
+    IN p_Telemovel      VARCHAR(20),
     IN p_DataNascimento DATE,
-    IN p_Equipa         INT
+    IN p_Equipa         INT,
+    IN p_Password       VARCHAR(100),
+    IN p_permissaoCriarJogo BOOLEAN
 )
 BEGIN
+    DECLARE v_Role VARCHAR(50);
+
     IF p_Nome IS NULL OR TRIM(p_Nome) = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Nome é obrigatório';
     END IF;
-
     IF p_Tipo IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Tipo é obrigatório';
     END IF;
-
     IF p_Email IS NULL OR TRIM(p_Email) = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email é obrigatório';
     END IF;
-
     IF EXISTS (SELECT 1 FROM Utilizador WHERE Email = p_Email) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email já está em uso';
     END IF;
 
-    INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa)
-    VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa);
+    INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa, permissaoCriarJogo)
+    VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa, p_permissaoCriarJogo);
+
+    IF p_Tipo = 'Admin' THEN
+        SET v_Role = 'Admin';
+    ELSEIF p_Tipo = 'User' THEN
+        SET v_Role = 'Utilizador';
+    ELSEIF p_Tipo = 'Android' THEN
+        SET v_Role = 'Android';
+    END IF;
+
+    SET @sql_create = CONCAT(
+        'CREATE USER IF NOT EXISTS ''', p_Email, '''@''%'' IDENTIFIED BY ''', p_Password, ''''
+    );
+    PREPARE stmt FROM @sql_create;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_alter = CONCAT(
+        'ALTER USER ''', p_Email, '''@''%'' IDENTIFIED BY ''', p_Password, ''''
+    );
+    PREPARE stmt FROM @sql_alter;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_grant = CONCAT(
+        'GRANT `', v_Role, '` TO ''', p_Email, '''@''%'''
+    );
+    PREPARE stmt FROM @sql_grant;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_default = CONCAT(
+        'SET DEFAULT ROLE `', v_Role, '` TO ''', p_Email, '''@''%'''
+    );
+    PREPARE stmt FROM @sql_default;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    -- Handle permission for Criar_Jogo
+    IF p_permissaoCriarJogo THEN
+        SET @sql_perm = CONCAT('GRANT EXECUTE ON PROCEDURE bd_pisid.Criar_Jogo TO ''', p_Email, '''@''%''');
+    ELSE
+        SET @sql_perm = CONCAT('REVOKE EXECUTE ON PROCEDURE bd_pisid.Criar_Jogo FROM ''', p_Email, '''@''%''');
+    END IF;
+    
+    PREPARE stmt FROM @sql_perm;
+    BEGIN
+        DECLARE CONTINUE HANDLER FOR 1141 BEGIN END;
+        DECLARE CONTINUE HANDLER FOR 1403 BEGIN END;
+        EXECUTE stmt;
+    END;
+    DEALLOCATE PREPARE stmt;
 
 END$$
 
