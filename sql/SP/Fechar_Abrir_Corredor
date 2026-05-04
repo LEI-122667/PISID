@@ -40,7 +40,7 @@ BEGIN
         ELSE
         	UPDATE Corridor
         	SET Fechado = p_Estado
-        	WHERE IDCorridor = p_CorredorId;
+        	WHERE IDCorridor = p_CorredorId AND IDSimulacao = v_IDSimulacao;
     	
         	-- Se chegámos aqui sem disparar o Handler, a operação foi concluída
         	-- Retornamos 1 indicando que o estado atual da DB é o solicitado

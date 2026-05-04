@@ -7,8 +7,7 @@ CREATE PROCEDURE Criar_Utilizador(
     IN p_Telemovel      VARCHAR(20),
     IN p_DataNascimento DATE,
     IN p_Equipa         INT,
-    IN p_Password       VARCHAR(100),
-    IN p_permissaoCriarJogo BOOLEAN
+    IN p_Password       VARCHAR(100)
 )
 BEGIN
     DECLARE v_Role VARCHAR(50);
@@ -30,8 +29,8 @@ BEGIN
             SET MESSAGE_TEXT = 'Email já está em uso';
     END IF;
 
-    INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa, permissaoCriarJogo)
-    VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa, p_permissaoCriarJogo);
+    INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa)
+    VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa);
 
     IF p_Tipo = 'Admin' THEN
         SET v_Role = 'Admin';
@@ -67,23 +66,6 @@ BEGIN
     );
     PREPARE stmt FROM @sql_default;
     EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
-
-    -- Handle permission for Criar_Jogo
-    IF p_permissaoCriarJogo THEN
-        SET @sql_perm = CONCAT('GRANT EXECUTE ON PROCEDURE bd_pisid.Criar_Jogo TO ''', p_Email, '''@''%''');
-    ELSE
-        SET @sql_perm = CONCAT('REVOKE EXECUTE ON PROCEDURE bd_pisid.Criar_Jogo FROM ''', p_Email, '''@''%''');
-    END IF;
-    
-    -- We use a small hack to ignore error if revoking something not granted (though for a new user it shouldn't happen unless role has it)
-    -- Actually, if it's a new user, they only have what's in the role.
-    PREPARE stmt FROM @sql_perm;
-    BEGIN
-        DECLARE CONTINUE HANDLER FOR 1141 BEGIN END; -- Handler for "There is no such grant defined for user"
-        DECLARE CONTINUE HANDLER FOR 1403 BEGIN END; -- Handler for "There is no such grant defined for user on routine"
-        EXECUTE stmt;
-    END;
     DEALLOCATE PREPARE stmt;
 
 END$$

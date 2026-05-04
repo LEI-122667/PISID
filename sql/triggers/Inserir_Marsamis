@@ -14,7 +14,7 @@ BEGIN
             ON DUPLICATE KEY UPDATE NumeroMarsamisEven = NumeroMarsamisEven + 1;
             
             INSERT INTO OcupacaoLabirinto (IDSimulacao, IDJogo, Sala, NumeroMarsamisEven, NumeroMarsamisOdd)
-            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, -1, 0)
+            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, 0, 0)
             ON DUPLICATE KEY UPDATE NumeroMarsamisEven = NumeroMarsamisEven - 1;
         ELSE
             INSERT INTO OcupacaoLabirinto (IDSimulacao, IDJogo, Sala, NumeroMarsamisEven, NumeroMarsamisOdd)
@@ -22,7 +22,7 @@ BEGIN
             ON DUPLICATE KEY UPDATE NumeroMarsamisOdd = NumeroMarsamisOdd + 1;
             
             INSERT INTO OcupacaoLabirinto (IDSimulacao, IDJogo, Sala, NumeroMarsamisEven, NumeroMarsamisOdd)
-            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, 0, -1)
+            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, 0, 0)
             ON DUPLICATE KEY UPDATE NumeroMarsamisOdd = NumeroMarsamisOdd - 1;
         END IF;
     END IF;

@@ -20,6 +20,7 @@ CREATE TRIGGER Alerta_Temperatura
 AFTER INSERT ON Temperatura
 FOR EACH ROW 
 BEGIN
+    DECLARE v_IDSimulacao INT;
     DECLARE alertaSuperior INT;
     DECLARE alertaInferior INT;
     DECLARE limiteSuperior DECIMAL(6,2);
@@ -29,37 +30,48 @@ BEGIN
     DECLARE tempLowTol DECIMAL(6,2);
     DECLARE arcondicionado TINYINT;
 
-    -- Get alert thresholds
-    SELECT COALESCE(alerta_temperatura_high, 0), COALESCE(alerta_temperatura_low, 0)
-    INTO alertaSuperior, alertaInferior
-    FROM ConfigJogo
-    WHERE IDSimulacao = NEW.IDSimulacao
-    LIMIT 1;
-    
-    -- Get baseline maze setup
-    SELECT COALESCE(NormalTemperature, 0), COALESCE(TemperatureVarHighToleration, 0), COALESCE(TemperatureVarLowToleration, 0)
-    INTO normalTemp, tempHighTol, tempLowTol
-    FROM SetupMaze
-    WHERE IDSimulacao = NEW.IDSimulacao
-    LIMIT 1;
-    
-    -- Calculate limits
-    SET limiteSuperior = normalTemp + tempHighTol;
-    SET limiteInferior = normalTemp - tempLowTol;
-    
-    -- Check AC status
-    SELECT COALESCE(ArCondicionado, 0)
-    INTO arcondicionado
+    -- Get the active simulation
+    SELECT IDSimulacao INTO v_IDSimulacao
     FROM Simulacao
-    WHERE IDSimulacao = NEW.IDSimulacao
+    WHERE Ativo = TRUE
     LIMIT 1;
-    
-    -- Logic: Trigger alert if temperature is an outlier and AC is OFF (0)
-    IF (NEW.Temperatura >= (limiteSuperior - alertaSuperior) OR NEW.Temperatura <= (limiteInferior + alertaInferior)) AND arcondicionado = 0 THEN
-    
-        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'Temperatura', 'Outlier na temperatura', NEW.Hora);
-        
+
+    IF v_IDSimulacao IS NOT NULL THEN
+
+        -- Get alert thresholds
+        SELECT COALESCE(alerta_temperatura_high, 0), COALESCE(alerta_temperatura_low, 0)
+        INTO alertaSuperior, alertaInferior
+        FROM ConfigJogo
+        WHERE IDSimulacao = v_IDSimulacao
+        LIMIT 1;
+
+        -- Get baseline maze setup
+        SELECT COALESCE(NormalTemperature, 0), COALESCE(TemperatureVarHighToleration, 0), COALESCE(TemperatureVarLowToleration, 0)
+        INTO normalTemp, tempHighTol, tempLowTol
+        FROM SetupMaze
+        WHERE IDSimulacao = v_IDSimulacao
+        LIMIT 1;
+
+        -- Calculate limits
+        SET limiteSuperior = normalTemp + tempHighTol;
+        SET limiteInferior = normalTemp - tempLowTol;
+
+        -- Check AC status
+        SELECT COALESCE(ArCondicionado, 0)
+        INTO arcondicionado
+        FROM Simulacao
+        WHERE IDSimulacao = v_IDSimulacao
+        LIMIT 1;
+
+        -- Logic: High temp alert when AC is OFF, low temp alert when AC is ON
+        IF (NEW.Temperatura >= (limiteSuperior - alertaSuperior) AND arcondicionado = 0)
+           OR (NEW.Temperatura <= (limiteInferior + alertaInferior) AND arcondicionado = 1) THEN
+
+            INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+            VALUES (v_IDSimulacao, NOW(), 0, '1', NEW.Temperatura, 'Temperatura', 'Temperatura perto do limite', NOW());
+
+        END IF;
+
     END IF;
 
 END$$
@@ -76,36 +88,47 @@ AFTER INSERT ON Som
 FOR EACH ROW
 BEGIN
 
+    DECLARE v_IDSimulacao INT;
     DECLARE alerta INT DEFAULT 0;
     DECLARE limite DECIMAL(6,2) DEFAULT 0;
     DECLARE normalNoise DECIMAL(6,2) DEFAULT 0;
     DECLARE noiseTol DECIMAL(6,2) DEFAULT 0;
     DECLARE corredoresAbertos INT DEFAULT 0;
 
-    SELECT COALESCE(alerta_som, 0)
-    INTO alerta
-    FROM ConfigJogo
-    WHERE IDSimulacao = NEW.IDSimulacao
+    -- Get the active simulation
+    SELECT IDSimulacao INTO v_IDSimulacao
+    FROM Simulacao
+    WHERE Ativo = TRUE
     LIMIT 1;
-    
-    SELECT COALESCE(NormalNoise, 0), COALESCE(NoiseVarToleration, 0)
-    INTO normalNoise, noiseTol
-    FROM SetupMaze
-    WHERE IDSimulacao = NEW.IDSimulacao
-    LIMIT 1;
-    
-    SET limite = normalNoise + noiseTol;
-    
-    SELECT COUNT(*)
-    INTO corredoresAbertos
-    FROM Corridor
-    WHERE IDSimulacao = NEW.IDSimulacao AND Fechado = 0;
-    
-    IF NEW.Som >= (limite - alerta) AND corredoresAbertos > 0 THEN
-       
-        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao,'2', NEW.Som,'Som','Outlier no ruído',NEW.Hora);
-        
+
+    IF v_IDSimulacao IS NOT NULL THEN
+
+        SELECT COALESCE(alerta_som, 0)
+        INTO alerta
+        FROM ConfigJogo
+        WHERE IDSimulacao = v_IDSimulacao
+        LIMIT 1;
+
+        SELECT COALESCE(NormalNoise, 0), COALESCE(NoiseVarToleration, 0)
+        INTO normalNoise, noiseTol
+        FROM SetupMaze
+        WHERE IDSimulacao = v_IDSimulacao
+        LIMIT 1;
+
+        SET limite = normalNoise + noiseTol;
+
+        SELECT COUNT(*)
+        INTO corredoresAbertos
+        FROM Corridor
+        WHERE IDSimulacao = v_IDSimulacao AND Fechado = 0;
+
+        IF NEW.Som >= (limite - alerta) AND corredoresAbertos > 0 THEN
+
+            INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+            VALUES (v_IDSimulacao, NOW(), 0, '2', NEW.Som, 'Som', 'Som perto do limite', NOW());
+
+        END IF;
+
     END IF;
 
 END$$
@@ -131,7 +154,7 @@ BEGIN
             ON DUPLICATE KEY UPDATE NumeroMarsamisEven = NumeroMarsamisEven + 1;
             
             INSERT INTO OcupacaoLabirinto (IDSimulacao, IDJogo, Sala, NumeroMarsamisEven, NumeroMarsamisOdd)
-            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, -1, 0)
+            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, 0, 0)
             ON DUPLICATE KEY UPDATE NumeroMarsamisEven = NumeroMarsamisEven - 1;
         ELSE
             INSERT INTO OcupacaoLabirinto (IDSimulacao, IDJogo, Sala, NumeroMarsamisEven, NumeroMarsamisOdd)
@@ -139,7 +162,7 @@ BEGIN
             ON DUPLICATE KEY UPDATE NumeroMarsamisOdd = NumeroMarsamisOdd + 1;
             
             INSERT INTO OcupacaoLabirinto (IDSimulacao, IDJogo, Sala, NumeroMarsamisEven, NumeroMarsamisOdd)
-            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, 0, -1)
+            VALUES (NEW.IDSimulacao, NEW.IDSimulacao, NEW.SalaOrigem, 0, 0)
             ON DUPLICATE KEY UPDATE NumeroMarsamisOdd = NumeroMarsamisOdd - 1;
         END IF;
     END IF;
@@ -239,8 +262,8 @@ BEGIN
     IF NEW.Temperatura >= limiteSuperior OR NEW.Temperatura <= limiteInferior THEN
         UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
         
-        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao, '1', NEW.Temperatura, 'Temperatura', 'Simulação terminada: Limite de temperatura atingido!', NEW.Hora);
+        INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        VALUES (NEW.IDSimulacao, NOW(), 0, '1', NEW.Temperatura, 'Temperatura', 'Simulação terminada: Limite de temperatura atingido!', NOW());
     END IF;
 END$$
 
@@ -266,8 +289,8 @@ BEGIN
     IF NEW.Som >= limite THEN
         UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
         
-        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao, '2', NEW.Som, 'Som', 'Simulação terminada: Limite de ruído atingido!', NEW.Hora);
+        INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        VALUES (NEW.IDSimulacao, NOW(), 0, '2', NEW.Som, 'Som', 'Simulação terminada: Limite de ruído atingido!', NOW());
     END IF;
 END$$
 

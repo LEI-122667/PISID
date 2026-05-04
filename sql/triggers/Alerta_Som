@@ -4,39 +4,32 @@ CREATE TRIGGER Alerta_Som
 AFTER INSERT ON Som
 FOR EACH ROW
 BEGIN
+    DECLARE v_IDSimulacao INT;
+    DECLARE v_Alerta INT DEFAULT 0;
+    DECLARE v_Limite DECIMAL(6,2) DEFAULT 0;
+    DECLARE v_NormalNoise DECIMAL(6,2) DEFAULT 0;
+    DECLARE v_NoiseTol DECIMAL(6,2) DEFAULT 0;
+    DECLARE v_CorredoresAbertos INT DEFAULT 0;
 
-    DECLARE alerta INT DEFAULT 0;
-    DECLARE limite DECIMAL(6,2) DEFAULT 0;
-    DECLARE normalNoise DECIMAL(6,2) DEFAULT 0;
-    DECLARE noiseTol DECIMAL(6,2) DEFAULT 0;
-    DECLARE corredoresAbertos INT DEFAULT 0;
+    -- Procurar a simulação que o utilizador quer ver no dashboard (Ativa)
+    SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1;
 
-    SELECT COALESCE(alerta_som, 0)
-    INTO alerta
-    FROM ConfigJogo
-    WHERE IDSimulacao = NEW.IDSimulacao
-    LIMIT 1;
-    
-    SELECT COALESCE(NormalNoise, 0), COALESCE(NoiseVarToleration, 0)
-    INTO normalNoise, noiseTol
-    FROM SetupMaze
-    WHERE IDSimulacao = NEW.IDSimulacao
-    LIMIT 1;
-    
-    SET limite = normalNoise + noiseTol;
-    
-    SELECT COUNT(*)
-    INTO corredoresAbertos
-    FROM Corridor
-    WHERE IDSimulacao = NEW.IDSimulacao AND Fechado = 0;
-    
-    IF NEW.Som >= (limite - alerta) AND corredoresAbertos > 0 THEN
-       
-        INSERT INTO Mensagens (IDSimulacao, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao,'2', NEW.Som,'Som','Outlier no ruído',NEW.Hora);
-        
+    IF v_IDSimulacao IS NOT NULL THEN
+        -- Buscar limites especificamente para os dados que acabaram de entrar (NEW)
+        SELECT COALESCE(alerta_som, 0) INTO v_Alerta FROM ConfigJogo WHERE IDSimulacao = NEW.IDSimulacao LIMIT 1;
+        SELECT COALESCE(NormalNoise, 0), COALESCE(NoiseVarToleration, 0) INTO v_NormalNoise, v_NoiseTol FROM SetupMaze WHERE IDSimulacao = NEW.IDSimulacao LIMIT 1;
+
+        SET v_Limite = v_NormalNoise + v_NoiseTol;
+
+        -- Contar corredores abertos para a simulação ativa
+        SELECT COUNT(*) INTO v_CorredoresAbertos FROM Corridor WHERE IDSimulacao = v_IDSimulacao AND Fechado = 0;
+
+        -- Se o som estiver perto do limite E houver corredores para fechar
+        IF NEW.Som >= (v_Limite - v_Alerta) AND v_CorredoresAbertos > 0 THEN
+            INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+            VALUES (v_IDSimulacao, NOW(), 0, '2', NEW.Som, 'Som', 'Som perto do limite', NOW());
+        END IF;
     END IF;
-
 END$$
 
 DELIMITER ;

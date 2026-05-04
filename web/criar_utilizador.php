@@ -15,11 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dataNasc = $_POST['data_nascimento'] ?: null;
     $equipa = $_POST['equipa'] ?: null;
     $password = $_POST['password'];
-    $permissaoCriarJogo = isset($_POST['permissao_criar_jogo']) ? 1 : 0;
 
     try {
-        $stmt = $pdo->prepare('CALL Criar_Utilizador(?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$nome, $tipo, $email, $telemovel, $dataNasc, $equipa, $password, $permissaoCriarJogo]);
+        $stmt = $pdo->prepare('CALL Criar_Utilizador(?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$nome, $tipo, $email, $telemovel, $dataNasc, $equipa, $password]);
         $success = "Utilizador criado com sucesso!";
     } catch (\PDOException $e) {
         $error = "Erro: " . $e->getMessage();
@@ -83,10 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label>Password</label>
                     <input type="password" name="password" required>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
-                    <input type="checkbox" name="permissao_criar_jogo" id="permissao_criar_jogo" value="1" style="width: auto;">
-                    <label for="permissao_criar_jogo" style="margin: 0;">Permissão para Criar Jogo</label>
                 </div>
                 <button type="submit" class="btn">Criar Utilizador</button>
             </form>

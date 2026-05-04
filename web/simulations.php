@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+$user_id = $_SESSION['user_id'];
 $equipa_user = $_SESSION['equipa'];
 $tipo = $_SESSION['tipo'];
 
@@ -40,7 +41,7 @@ $simulacoes = $stmt->fetchAll();
     </div>
     <div class="container">
         <div class="glass-panel">
-            <h2>As Suas Simulações</h2>
+            <h2>Simulações</h2>
             
             <?php if (count($simulacoes) === 0): ?>
                 <p>Não há simulações para apresentar.</p>
@@ -60,6 +61,15 @@ $simulacoes = $stmt->fetchAll();
                     </thead>
                     <tbody>
                         <?php foreach ($simulacoes as $s): ?>
+                        <?php 
+                            // Condition to show "Alterar" button:
+                            // 1. Admin can always see it
+                            // 2. Creator (IDUtilizador) can see it
+                            // 3. For legacy records, anyone from the team can see it
+                            $can_edit = ($tipo === 'Admin') || 
+                                        ($s['IDUtilizador'] == $user_id) || 
+                                        ($s['IDUtilizador'] === null && $s['Equipa'] == $equipa_user);
+                        ?>
                         <tr>
                             <td><?= htmlspecialchars($s['IDSimulacao']) ?></td>
                             <td><?= htmlspecialchars($s['Descricao']) ?></td>
@@ -75,9 +85,12 @@ $simulacoes = $stmt->fetchAll();
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if ($tipo === 'Criador' && $s['Equipa'] == $equipa_user && $s['Ativo'] == 0): ?>
-                                    <!-- Apenas para simulações não ativas, de acordo com o SP -->
-                                    <a href="alterar_jogo.php?id=<?= $s['IDSimulacao'] ?>" class="btn" style="padding: 0.5rem; font-size: 0.8rem;">Alterar</a>
+                                <?php if ($can_edit): ?>
+                                    <a href="alterar_jogo.php?id=<?= $s['IDSimulacao'] ?>" class="btn" style="padding: 0.5rem; font-size: 0.8rem;">
+                                        <?= $s['Ativo'] ? 'Ver' : 'Alterar' ?>
+                                    </a>
+                                <?php else: ?>
+                                    <a href="alterar_jogo.php?id=<?= $s['IDSimulacao'] ?>" class="btn btn-secondary" style="padding: 0.5rem; font-size: 0.8rem;">Ver</a>
                                 <?php endif; ?>
                             </td>
                         </tr>

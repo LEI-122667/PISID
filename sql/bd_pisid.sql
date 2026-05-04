@@ -11,7 +11,8 @@ CREATE TABLE Simulacao (
     DataHoraInicio TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
     Pontuacao      DOUBLE         DEFAULT 0,
     ArCondicionado BOOLEAN        DEFAULT FALSE,
-    Ativo          BOOLEAN        DEFAULT TRUE  
+    Ativo          BOOLEAN        DEFAULT TRUE,
+    IDUtilizador   INT            NULL
 );
 
 -- ─────────────────────────────────────────────
@@ -24,8 +25,7 @@ CREATE TABLE Utilizador (
     Tipo           ENUM('Admin','User','Android') NOT NULL,
     Email          VARCHAR(50)    UNIQUE,
     DataNascimento DATE,
-    Equipa         INT,           -- References Simulacao(Equipa)
-    permissaoCriarJogo BOOLEAN    DEFAULT FALSE
+    Equipa         INT
 );
 
 -- ─────────────────────────────────────────────

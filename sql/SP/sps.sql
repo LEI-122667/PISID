@@ -174,6 +174,7 @@ CREATE PROCEDURE Criar_Jogo(
     IN p_DataHoraInicio TIMESTAMP,
     IN p_Pontuacao      INT,
     IN p_ArCondicionado BOOLEAN,
+    IN p_IDUtilizador   INT,
     OUT p_IDSimulacao   INT
 )
 BEGIN
@@ -183,14 +184,21 @@ BEGIN
             SET MESSAGE_TEXT = 'Já existe um jogo ativo, não é possível criar outro';
     END IF;
 
-    INSERT INTO Simulacao (Descricao, Equipa, DataHoraInicio, Pontuacao, ArCondicionado, Ativo)
+    -- Check team doesn't already have an active simulation
+    IF EXISTS (SELECT 1 FROM Simulacao WHERE Equipa = p_Equipa AND Ativo = TRUE) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A sua equipa já tem uma simulação ativa';
+    END IF;
+
+    INSERT INTO Simulacao (Descricao, Equipa, DataHoraInicio, Pontuacao, ArCondicionado, Ativo, IDUtilizador)
     VALUES (
         p_Descricao,
         p_Equipa,
         COALESCE(p_DataHoraInicio, CURRENT_TIMESTAMP),
         COALESCE(p_Pontuacao, 0),
         COALESCE(p_ArCondicionado, FALSE),
-        TRUE
+        TRUE,
+        p_IDUtilizador
     );
 
     SET p_IDSimulacao = LAST_INSERT_ID();
@@ -207,8 +215,7 @@ CREATE PROCEDURE Criar_Utilizador(
     IN p_Telemovel      VARCHAR(20),
     IN p_DataNascimento DATE,
     IN p_Equipa         INT,
-    IN p_Password       VARCHAR(100),
-    IN p_permissaoCriarJogo BOOLEAN
+    IN p_Password       VARCHAR(100)
 )
 BEGIN
     DECLARE v_Role VARCHAR(50);
@@ -230,8 +237,8 @@ BEGIN
             SET MESSAGE_TEXT = 'Email já está em uso';
     END IF;
 
-    INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa, permissaoCriarJogo)
-    VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa, p_permissaoCriarJogo);
+    INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa)
+    VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa);
 
     IF p_Tipo = 'Admin' THEN
         SET v_Role = 'Admin';
@@ -267,21 +274,6 @@ BEGIN
     );
     PREPARE stmt FROM @sql_default;
     EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
-
-    -- Handle permission for Criar_Jogo
-    IF p_permissaoCriarJogo THEN
-        SET @sql_perm = CONCAT('GRANT EXECUTE ON PROCEDURE bd_pisid.Criar_Jogo TO ''', p_Email, '''@''%''');
-    ELSE
-        SET @sql_perm = CONCAT('REVOKE EXECUTE ON PROCEDURE bd_pisid.Criar_Jogo FROM ''', p_Email, '''@''%''');
-    END IF;
-    
-    PREPARE stmt FROM @sql_perm;
-    BEGIN
-        DECLARE CONTINUE HANDLER FOR 1141 BEGIN END;
-        DECLARE CONTINUE HANDLER FOR 1403 BEGIN END;
-        EXECUTE stmt;
-    END;
     DEALLOCATE PREPARE stmt;
 
 END$$
@@ -371,7 +363,7 @@ BEGIN
         ELSE
         	UPDATE Corridor
         	SET Fechado = p_Estado
-        	WHERE IDCorridor = p_CorredorId;
+        	WHERE IDCorridor = p_CorredorId AND IDSimulacao = v_IDSimulacao;
 
         	-- Se chegámos aqui sem disparar o Handler, a operação foi concluída
         	-- Retornamos 1 indicando que o estado atual da DB é o solicitado
@@ -412,7 +404,7 @@ BEGIN
     ELSE
     	UPDATE Corridor
         SET Fechado = p_Estado
-        WHERE Fechado != p_Estado;
+        WHERE IDSimulacao = v_IDSimulacao AND Fechado != p_Estado;
 
         -- Se chegámos aqui sem disparar o Handler, a operação foi concluída
         -- Retornamos 1 indicando que o estado atual da DB é o solicitado
