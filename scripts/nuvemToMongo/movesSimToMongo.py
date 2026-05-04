@@ -2,6 +2,7 @@ from simToMongoDB import simToMongoDB
 import json
 import pymongo
 import paho.mqtt.client as mqtt
+from datetime import datetime, timezone, timedelta
 
 class movesSimToMongo(simToMongoDB):
     def __init__(self, topic):
@@ -26,6 +27,9 @@ class movesSimToMongo(simToMongoDB):
             payload['idIncremental'] = self.getId("sensor_movimento")
             payload['inserted'] = False
             payload['timeSent'] = None
+            portugal_tz = timezone(timedelta(hours=1))
+            time_now = datetime.now(portugal_tz)
+            payload["Hour"] = time_now
 
             success = False
             while not success:

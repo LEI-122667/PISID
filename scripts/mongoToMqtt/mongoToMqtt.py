@@ -117,7 +117,8 @@ class mongoToMqtt:
             payload_doc = doc.copy()
             payload_doc["_id"] = None
             
-            time_now = datetime.now(timezone.utc)
+            portugal_tz = timezone(timedelta(hours=1))
+            time_now = datetime.now(portugal_tz)
             payload_doc["timeSent"] = time_now
             
             payload = json.dumps(payload_doc, default=str)   
