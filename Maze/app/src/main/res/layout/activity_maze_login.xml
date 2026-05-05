@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Host (Ex: 10.0.2.2)"
-        android:text="10.0.2.2:9000"  android:inputType="textUri"
+        android:text="10.0.2.2:8081"  android:inputType="textUri"
         android:minHeight="48dp" />
 
     <EditText
@@ -31,7 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Username"
-        android:text="admin"  android:inputType="textEmailAddress"
+        android:text="android2@gmail.com"  android:inputType="textEmailAddress"
         android:minHeight="48dp" />
 
     <EditText
@@ -39,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Password"
-        android:text="admin"  android:inputType="textPassword"
+        android:text="android"  android:inputType="textPassword"
         android:minHeight="48dp" />
 
     <EditText
@@ -47,7 +47,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Database"
-        android:text="maze"  android:inputType="text"
+        android:text="bd_pisid"  android:inputType="text"
         android:minHeight="48dp" />
 
 <!--    <EditText-->

@@ -2,34 +2,32 @@ package com.maze;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.google.gson.Gson;
 import com.maze.models.MinMaxValues;
 import com.maze.models.TempData;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.URLEncoder; // Necessário para codificar o database, se contiver caracteres especiais
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,119 +40,87 @@ import okhttp3.Response;
 
 public class MazeTemperatureFragment extends Fragment {
 
-    private static final String ARG_HOST = "host";
-    private static final String ARG_DATABASE = "database";
-    private static final String ARG_USERNAME = "username";
-    private static final String ARG_PASSWORD = "password";
-
-    private String host;
-    private String database;
-    private String username;
-    private String password;
     private LineChart lineChart;
     private OkHttpClient client;
-
-    public MazeTemperatureFragment() {
-        // Required empty public constructor
-    }
+    private String host, database, username, password;
+    private List<TempData> tempDataList = new ArrayList<>();
+    
+    private final Handler handler = new Handler();
+    private Runnable refreshRunnable;
 
     public static MazeTemperatureFragment newInstance(String host, String database, String username, String password) {
         MazeTemperatureFragment fragment = new MazeTemperatureFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_HOST, host);
-        args.putString(ARG_DATABASE, database);
-        args.putString(ARG_USERNAME, username);
-        args.putString(ARG_PASSWORD, password);
+        args.putString("host", host);
+        args.putString("database", database);
+        args.putString("username", username);
+        args.putString("password", password);
         fragment.setArguments(args);
         return fragment;
     }
 
+    @Nullable
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            host = getArguments().getString(ARG_HOST);
-            database = getArguments().getString(ARG_DATABASE);
-            username = getArguments().getString(ARG_USERNAME);
-            password = getArguments().getString(ARG_PASSWORD);
-        }
-        client = new OkHttpClient();
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_maze_temperature, container, false);
         lineChart = view.findViewById(R.id.lineChartTemperature);
+        client = new OkHttpClient();
+
+        if (getArguments() != null) {
+            host = getArguments().getString("host");
+            database = getArguments().getString("database");
+            username = getArguments().getString("username");
+            password = getArguments().getString("password");
+        }
+
+        setupChart();
+
+        // Configurar Runnable para atualização periódica
+        refreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                fetchTemperatureData();
+                handler.postDelayed(this, 5000); // Atualiza de 5 em 5 segundos
+            }
+        };
+
         return view;
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        setupChart();
-        fetchTemperatureData();
+    public void onResume() {
+        super.onResume();
+        handler.post(refreshRunnable); // Inicia ao abrir
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        handler.removeCallbacks(refreshRunnable); // Para ao sair
     }
 
     private void setupChart() {
         lineChart.getDescription().setEnabled(false);
-        lineChart.setTouchEnabled(true);
-        lineChart.setDragEnabled(true);
-        lineChart.setScaleEnabled(true);
-        lineChart.setPinchZoom(true);
-
+        lineChart.setNoDataText("A carregar dados...");
         XAxis xAxis = lineChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(false);
-        xAxis.setGranularity(1f);
-
-        YAxis leftAxis = lineChart.getAxisLeft();
-        leftAxis.setAxisMinimum(0f); // Inicia o eixo Y em 0
-        //leftAxis.setAxisMaximum(someValue); // Pode definir um máximo, ou deixar o chart auto-escalar
         lineChart.getAxisRight().setEnabled(false);
-
-        Legend legend = lineChart.getLegend();
-        legend.setForm(Legend.LegendForm.LINE);
-        legend.setTextSize(12f);
-
-        lineChart.setNoDataText("A carregar dados de temperatura..."); // Mensagem inicial
     }
 
     private void fetchTemperatureData() {
+        if (host == null) return;
         String tempUrl = "http://" + host + "/api/get_temperature_data.php";
-
         HttpUrl.Builder urlBuilder = HttpUrl.parse(tempUrl).newBuilder();
         try {
-            // DATABASE: Manter URLEncoder.encode se o nome da DB puder ter caracteres especiais
             urlBuilder.addQueryParameter("database", URLEncoder.encode(database, "UTF-8"));
             urlBuilder.addQueryParameter("username", username);
             urlBuilder.addQueryParameter("password", password);
-        } catch (Exception e) {
-            Log.e("MazeTemp", "Erro ao preparar parâmetros URL para dados de temperatura: " + e.getMessage());
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(() -> Toast.makeText(getContext(), "Erro ao preparar requisição de temperatura.", Toast.LENGTH_LONG).show());
-            }
-            return;
-        }
+        } catch (Exception e) { e.printStackTrace(); }
 
-        String finalUrl = urlBuilder.build().toString();
-        Request request = new Request.Builder()
-                .url(finalUrl)
-                .get()
-                .build();
-
+        Request request = new Request.Builder().url(urlBuilder.build()).build();
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
-                        Toast.makeText(getContext(), "Erro de conexão ao buscar dados de temperatura: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        lineChart.setNoDataText("Erro de conexão ao carregar dados.");
-                        lineChart.invalidate();
-                    });
-                }
-                Log.e("MazeTemp", "Erro na requisição de temperatura: " + e.getMessage());
-            }
+            public void onFailure(@NonNull Call call, @NonNull IOException e) { Log.e("MazeTemp", "Erro: " + e.getMessage()); }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
@@ -162,209 +128,104 @@ public class MazeTemperatureFragment extends Fragment {
                     String responseData = response.body().string();
                     try {
                         JSONObject jsonResponse = new JSONObject(responseData);
-                        String responseData2 = jsonResponse.getJSONArray("data").toString();
-                        Gson gson = new Gson();
-                        Type tempListType = new TypeToken<List<TempData>>(){}.getType();
-                        List<TempData> tempDataList = gson.fromJson(responseData2, tempListType);
-
-                        if (tempDataList != null && !tempDataList.isEmpty()) { // Verificar se a lista não é nula/vazia
-                            fetchMinMaxValues(tempDataList); // Chama a segunda requisição
-                        } else {
-                            Log.w("MazeTemp", "Lista de dados de temperatura é nula ou vazia após o parsing.");
-                            if (getActivity() != null) {
-                                getActivity().runOnUiThread(() -> {
-                                    Toast.makeText(getContext(), "Dados de temperatura vazios ou inválidos.", Toast.LENGTH_LONG).show();
-                                    lineChart.setNoDataText("Nenhum dado de temperatura encontrado.");
-                                    lineChart.invalidate();
-                                });
-                            }
+                        JSONArray dataArray = jsonResponse.getJSONArray("data");
+                        tempDataList.clear();
+                        for (int i = 0; i < dataArray.length(); i++) {
+                            JSONObject obj = dataArray.getJSONObject(i);
+                            tempDataList.add(new TempData(obj.getInt("idtemperatura"), (float) obj.getDouble("temperatura")));
                         }
-                    } catch (Exception e) {
-                        Log.e("MazeTemp", "Erro ao parsear JSON de dados de temperatura: " + e.getMessage());
-                        if (getActivity() != null) {
-                            getActivity().runOnUiThread(() -> {
-                                Toast.makeText(getContext(), "Erro no formato da resposta da temperatura.", Toast.LENGTH_LONG).show();
-                                lineChart.setNoDataText("Erro ao interpretar dados.");
-                                lineChart.invalidate();
-                            });
-                        }
-                    }
-                } else {
-                    String errorBody = response.body() != null ? response.body().string() : "No error body";
-                    Log.e("MazeTemp", "Erro do servidor ao buscar dados de temperatura: " + response.code() + " - " + errorBody);
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            Toast.makeText(getContext(), "Erro do servidor ao buscar dados de temperatura: " + response.code(), Toast.LENGTH_LONG).show();
-                            lineChart.setNoDataText("Erro do servidor: " + response.code());
-                            lineChart.invalidate();
-                        });
-                    }
+                        fetchMinMaxValues();
+                    } catch (Exception e) { e.printStackTrace(); }
                 }
             }
         });
     }
 
-    private void fetchMinMaxValues(List<TempData> tempDataList) {
+    private void fetchMinMaxValues() {
         String minMaxUrl = "http://" + host + "/api/get_min_max_temp_values.php";
-
         HttpUrl.Builder urlBuilder = HttpUrl.parse(minMaxUrl).newBuilder();
         try {
-            // DATABASE: Manter URLEncoder.encode
             urlBuilder.addQueryParameter("database", URLEncoder.encode(database, "UTF-8"));
-            // USERNAME & PASSWORD: REMOVER URLEncoder.encode
             urlBuilder.addQueryParameter("username", username);
             urlBuilder.addQueryParameter("password", password);
-        } catch (Exception e) {
-            Log.e("MazeTemp", "Erro ao preparar parâmetros URL para min/max: " + e.getMessage());
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(() -> Toast.makeText(getContext(), "Erro ao preparar requisição de min/max.", Toast.LENGTH_LONG).show());
-            }
-            return;
-        }
+        } catch (Exception e) { e.printStackTrace(); }
 
-        String finalUrl = urlBuilder.build().toString();
-        Log.d("MazeTemp", "GET URL (Min/Max): " + finalUrl);
-
-        Request request = new Request.Builder()
-                .url(finalUrl)
-                .get()
-                .build();
-
+        Request request = new Request.Builder().url(urlBuilder.build()).build();
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
-                        Toast.makeText(getContext(), "Erro de conexão para min/max: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        lineChart.setNoDataText("Erro de conexão ao carregar limites.");
-                        lineChart.invalidate();
-                    });
-                }
-                Log.e("MazeTemp", "Erro na requisição min/max: " + e.getMessage());
-            }
-
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {}
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful() && response.body() != null) {
                     String responseData = response.body().string();
-                    Log.d("MazeTemp", "Resposta Min/Max: " + responseData);
-
                     try {
-                        // 1. Criamos o JSONObject para ler a estrutura "success/data"
                         JSONObject jsonResponse = new JSONObject(responseData);
-
-                        float maxHighValue = 0f;
-                        float minLowValue = 0f;
-
                         if (jsonResponse.getBoolean("success")) {
-                            // 2. Extraímos o objeto "data" (que contém os dois valores distintos)
-                            JSONObject dataObj = jsonResponse.getJSONObject("data");
-
-                            // 3. Usamos o GSON para converter o conteúdo de data para a sua classe MinMaxValues
-                            // Note que usamos MinMaxValues.class e NÃO List<MinMaxValues>
-                            Gson gson = new Gson();
-                            MinMaxValues minMax = gson.fromJson(dataObj.toString(), MinMaxValues.class);
-
-                            if (minMax != null) {
-                                maxHighValue = minMax.getMaximo();
-                                minLowValue = minMax.getMinimo();
+                            MinMaxValues minMax = new Gson().fromJson(jsonResponse.getJSONObject("data").toString(), MinMaxValues.class);
+                            if (getActivity() != null) {
+                                getActivity().runOnUiThread(() -> updateChart(tempDataList, minMax));
                             }
-                        } else {
-                            Log.w("MazeTemp", "PHP reportou erro no sucesso: " + jsonResponse.optString("message"));
                         }
-
-                        if (getActivity() != null) {
-                            float finalMax = maxHighValue;
-                            float finalMin = minLowValue;
-                            getActivity().runOnUiThread(() -> updateChart(tempDataList, finalMax, finalMin));
-                        }
-
-                    } catch (Exception e) {
-                        Log.e("MazeTemp", "Erro ao parsear JSON do Min/Max: " + e.getMessage());
-                        if (getActivity() != null) {
-                            getActivity().runOnUiThread(() -> {
-                                Toast.makeText(getContext(), "Erro no formato dos limites.", Toast.LENGTH_SHORT).show();
-                                lineChart.setNoDataText("Erro ao interpretar limites.");
-                                lineChart.invalidate();
-                            });
-                        }
-                    }
-                } else {
-                    // ... (seu código de erro de servidor mantém-se igual)
-                    Log.e("MazeTemp", "Erro do servidor: " + response.code());
+                    } catch (Exception e) { e.printStackTrace(); }
                 }
             }
-
         });
     }
 
-    private void updateChart(List<TempData> tempDataList, float maxHighValue, float minLowValue) {
-        // Limpar o gráfico antes de adicionar novos dados
-        lineChart.clear();
-        lineChart.invalidate();
+    private void updateChart(List<TempData> list, MinMaxValues minMax) {
+        if (list.isEmpty() || !isAdded()) return;
 
-        // Se não houver dados de temperatura, exibe uma mensagem
-        if (tempDataList == null || tempDataList.isEmpty()) {
-            lineChart.setNoDataText("Nenhum dado de temperatura encontrado para exibir.");
-            lineChart.invalidate(); // Garante que a mensagem é mostrada
-            return;
-        }
+        ArrayList<Entry> entries = new ArrayList<>();
+        ArrayList<Entry> maxLimit = new ArrayList<>();
+        ArrayList<Entry> minLimit = new ArrayList<>();
+        ArrayList<Entry> maxAlert = new ArrayList<>();
+        ArrayList<Entry> minAlert = new ArrayList<>();
 
-        ArrayList<Entry> tempEntries = new ArrayList<>();
-        ArrayList<Entry> maxLineEntries = new ArrayList<>();
-        ArrayList<Entry> minLineEntries = new ArrayList<>();
+        float maxVal = minMax.getMaximo();
+        float minVal = minMax.getMinimo();
+        float alertMax = maxVal - minMax.getOffsetMax();
+        float alertMin = minVal + minMax.getOffsetMin();
 
-        for (TempData data : tempDataList) {
-            tempEntries.add(new Entry(data.getID(), data.getValue()));
-            maxLineEntries.add(new Entry(data.getID(), maxHighValue)); // Reta constante máxima
-            minLineEntries.add(new Entry(data.getID(), minLowValue));   // Reta constante mínima
-        }
-
-        LineDataSet tempDataSet = new LineDataSet(tempEntries, "Temperature Value");
-        tempDataSet.setColor(Color.BLUE);
-        tempDataSet.setDrawCircles(true);
-        tempDataSet.setDrawValues(false);
-        tempDataSet.setLineWidth(2f);
-        tempDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-
-        LineDataSet maxLineDataSet = new LineDataSet(maxLineEntries, "Max High Value");
-        maxLineDataSet.setColor(Color.RED);
-        maxLineDataSet.setDrawCircles(false);
-        maxLineDataSet.setDrawValues(false);
-        maxLineDataSet.setLineWidth(2f);
-        maxLineDataSet.enableDashedLine(10f, 5f, 0f);
-
-        LineDataSet minLineDataSet = new LineDataSet(minLineEntries, "Min Low Value");
-        minLineDataSet.setColor(Color.GREEN);
-        minLineDataSet.setDrawCircles(false);
-        minLineDataSet.setDrawValues(false);
-        minLineDataSet.setLineWidth(2f);
-        minLineDataSet.enableDashedLine(10f, 5f, 0f);
-
-        ArrayList<ILineDataSet> dataSets = new ArrayList<>();
-        dataSets.add(tempDataSet);
-        dataSets.add(maxLineDataSet);
-        dataSets.add(minLineDataSet);
-
-        LineData lineData = new LineData(dataSets);
-        lineChart.setData(lineData);
-
-        // Ajustar o eixo Y dinamicamente para os valores do gráfico
-        // Com base nos dados, o chart deve auto-escalar, mas pode ajudar a forçar um pouco
-        // Se os valores são sempre positivos, setAxisMinimum(0f) é bom.
-        // Se quiser que o gráfico se ajuste um pouco mais, pode calcular min/max dos dados:
         float minY = Float.MAX_VALUE;
         float maxY = Float.MIN_VALUE;
-        for (Entry entry : tempEntries) {
-            if (entry.getY() < minY) minY = entry.getY();
-            if (entry.getY() > maxY) maxY = entry.getY();
+
+        for (TempData d : list) {
+            float id = d.getID();
+            float val = d.getValue();
+            entries.add(new Entry(id, val));
+            maxLimit.add(new Entry(id, maxVal));
+            minLimit.add(new Entry(id, minVal));
+            maxAlert.add(new Entry(id, alertMax));
+            minAlert.add(new Entry(id, alertMin));
+            if (val < minY) minY = val;
+            if (val > maxY) maxY = val;
         }
 
-        YAxis leftAxis = lineChart.getAxisLeft();
-        leftAxis.setAxisMinimum(Math.min(0f, minY - 2f)); // Garante que começa em 0 ou um pouco abaixo do mínimo
-        leftAxis.setAxisMaximum(Math.max(maxHighValue + 2f, maxY + 2f)); // Garante que o máximo é um pouco acima do maior valor/limite
+        ArrayList<ILineDataSet> dataSets = new ArrayList<>();
+        dataSets.add(createSet(entries, "Temp", Color.BLUE, true));
+        dataSets.add(createSet(maxLimit, "Limite Max", Color.RED, false));
+        dataSets.add(createSet(minLimit, "Limite Min", Color.RED, false));
+        dataSets.add(createSet(maxAlert, "Alerta Max", Color.rgb(255, 165, 0), false));
+        dataSets.add(createSet(minAlert, "Alerta Min", Color.rgb(255, 165, 0), false));
 
-        lineChart.invalidate(); // Atualizar o gráfico
+        lineChart.setData(new LineData(dataSets));
+        YAxis leftAxis = lineChart.getAxisLeft();
+        float top = Math.max(maxVal, maxY);
+        float bottom = Math.min(minVal, minY);
+        leftAxis.setAxisMaximum(top + (top * 0.1f) + 2f);
+        leftAxis.setAxisMinimum(bottom - (bottom * 0.1f) - 2f);
+        lineChart.invalidate();
+    }
+
+    private LineDataSet createSet(List<Entry> entries, String label, int color, boolean main) {
+        LineDataSet set = new LineDataSet(entries, label);
+        set.setColor(color);
+        set.setDrawCircles(main);
+        set.setDrawValues(false);
+        set.setLineWidth(2f);
+        if (main) set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        else set.enableDashedLine(10f, 5f, 0f);
+        return set;
     }
 }
