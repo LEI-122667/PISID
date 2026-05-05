@@ -3,55 +3,20 @@ from mysql.connector import Error
 import pymongo
 import sys
 
-# --- Configurações Bases de Dados ---
+# --- Configuration: MariaDB Local ---
+usermysql, passmysql, hostmysql, database = "root", "root", "mysql", "bd_pisid"
+
+# --- Configuration: MariaDB Cloud ---
+nuvemuser, nuvempass, nuvemhost, nuvemDb = "aluno", "aluno", "194.210.86.10", "maze"
+
+# --- Configuration: MongoDB ---
+uri = "mongodb://root:root@mongodb:27017/"
 databaseMongo = "pisid_maze"
 collection_setup_name = "setup"
 collection_corredores_name = "corredores"
 
-# MariaDB Local
-usermysql, passmysql, hostmysql, database = "root", "root", "mysql", "bd_pisid"
-# MariaDB Cloud
-nuvemuser, nuvempass, nuvemhost, nuvemDb = "aluno", "aluno", "194.210.86.10", "maze"
-
-# --- Variáveis Globais de Conexão ---
-client_mongo = None
-db_mongo = None
-col_setup = None
-col_corredores = None
-
-def connectToMongoDB():
-    """Tenta localizar o nó PRIMARY dentro do Replica Set."""
-    global client_mongo, db_mongo, col_setup, col_corredores
-    
-    # Alvos: Nomes do Docker (interno) e Localhost (externo)
-    targets = [
-        ("localhost", 27018), ("localhost", 27019), ("localhost", 27020),
-        ("mongodb1", 27017), ("mongodb2", 27017), ("mongodb3", 27017)
-    ]
-    
-    print("🔎 À procura do nó PRIMARY no Cluster MongoDB...")
-    for host, port in targets:
-        try:
-            uri = f"mongodb://{host}:{port}/"
-            # directConnection=True força a ligação a este nó específico para validar se é Master
-            temp_client = pymongo.MongoClient(uri, directConnection=True, serverSelectionTimeoutMS=2000)
-            is_master = temp_client.admin.command('ismaster')
-            
-            if is_master.get('ismaster'):
-                print(f"✅ PRIMARY encontrado em {host}:{port}!")
-                client_mongo = temp_client
-                db_mongo = client_mongo[databaseMongo]
-                col_setup = db_mongo[collection_setup_name]
-                col_corredores = db_mongo[collection_corredores_name]
-                return True
-            temp_client.close()
-        except Exception:
-            continue
-    
-    print("❌ ERRO: Não foi possível encontrar um nó PRIMARY ativo.")
-    return False
-
-# --- 1. Captura de Argumentos do PHP ---
+# --- 1. Capture Arguments from PHP ---
+# Expected order: [IDSimulacao, outliers_temp, outliers_som, alerta_temp_h, alerta_temp_l, alerta_som, time_fechar, ruido_limite, amount_of_gatilhos]
 id_sim = sys.argv[1] if len(sys.argv) > 1 else "1"
 php_vars = {
     "id_sim": id_sim,
@@ -66,11 +31,7 @@ php_vars = {
 }
 
 try:
-    # --- 2. Estabelecer Ligações ---
-    
-    # MongoDB (Resiliente para Replica Set)
-    if not connectToMongoDB():
-        sys.exit(1)
+    # --- 2. Establish Connections ---
 
     # MariaDB Local
     conn_local = mariadb.connect(host=hostmysql, user=usermysql, passwd=passmysql, db=database, autocommit=True)
@@ -82,26 +43,36 @@ try:
     cursor_nuvem = conn_nuvem.cursor(dictionary=True)
     print("Connected to Cloud MariaDB.")
 
-    # --- 3. Sincronizar SetupMaze ---
+    # MongoDB
+    client_mongo = pymongo.MongoClient(uri, serverSelectionTimeoutMS=2000)
+    client_mongo.server_info()  # Test connection
+    db_mongo = client_mongo[databaseMongo]
+    col_setup = db_mongo[collection_setup_name]
+    col_corredores = db_mongo[collection_corredores_name]
+    print("Connected to MongoDB.")
+
+    # --- 3. Process SetupMaze ---
     print("\nSyncing SetupMaze...")
     cursor_nuvem.execute("SELECT * FROM SetupMaze")
     records = cursor_nuvem.fetchall()
 
-    col_setup.drop() # Limpa a coleção no PRIMARY
+    # Reset MongoDB collection
+    col_setup.drop()
 
     for row in records:
-        # A. MariaDB Local
+        # A. Insert into Local MariaDB
         sql_mariadb = """INSERT INTO SetupMaze (IDSimulacao, NumberRooms, NumberMarsamis, NumberPlayers, NormalTemperature,
                                                 TemperatureVarHighToleration, TemperatureVarLowToleration, NormalNoise, \
                                                 NoiseVarToleration)
                          VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+
         cursor_local.execute(sql_mariadb, (
             php_vars['id_sim'], row['numberrooms'], row['numbermarsamis'], row['numberplayers'],
             row['normaltemperature'], row['temperaturevarhightoleration'],
             row['temperaturevarlowtoleration'], row['normalnoise'], row['noisevartoleration']
         ))
 
-        # B. MongoDB (Primary)
+        # B. Insert into MongoDB (Adding the extra PHP arguments)
         setup_doc = {
             "numbermarsamis": row['numbermarsamis'],
             "numberrooms": row['numberrooms'],
@@ -111,13 +82,14 @@ try:
             "normaltemperature": row['normaltemperature'],
             "temperaturevarhightoleration": row['temperaturevarhightoleration'],
             "temperaturevarlowtoleration": row['temperaturevarlowtoleration'],
+            # Adding the arguments from PHP
             "outliers_temperatura": float(php_vars["out_temp"]),
             "outliers_som": float(php_vars["out_som"]),
             "IDSimulacao": int(php_vars["id_sim"])
         }
         col_setup.insert_one(setup_doc)
 
-    # --- 4. Sincronizar Corredores ---
+    # --- 4. Process Corridors ---
     print("Syncing Corridors...")
     cursor_nuvem.execute("SELECT Rooma, Roomb FROM Corridor")
     corredores = cursor_nuvem.fetchall()
@@ -126,10 +98,9 @@ try:
 
     for i, row in enumerate(corredores, start=1):
         # A. MariaDB Local
-        cursor_local.execute("INSERT INTO Corridor (IDSimulacao, RoomA, RoomB) VALUES (%s, %s, %s)", 
-                             (php_vars['id_sim'], row['Rooma'], row['Roomb']))
+        cursor_local.execute("INSERT INTO Corridor (IDSimulacao, RoomA, RoomB) VALUES (%s, %s, %s)", (php_vars['id_sim'], row['Rooma'], row['Roomb']))
 
-        # B. MongoDB (Primary)
+        # B. MongoDB
         corredor_doc = {
             "idCorredor": i,
             "origin": row['Rooma'],
@@ -137,7 +108,7 @@ try:
         }
         col_corredores.insert_one(corredor_doc)
 
-    # --- 5. ConfigJogo (MariaDB Local) ---
+    # --- 5. Insert ConfigJogo (MariaDB Only) ---
     print("Inserting ConfigJogo...")
     sql_config = """INSERT INTO ConfigJogo
                     (IDSimulacao, outliers_temperatura, outliers_som, alerta_temperatura_high,
@@ -159,4 +130,4 @@ except Exception as e:
 finally:
     if 'conn_local' in locals(): conn_local.close()
     if 'conn_nuvem' in locals(): conn_nuvem.close()
-    if client_mongo: client_mongo.close()
+    if 'client_mongo' in locals(): client_mongo.close()

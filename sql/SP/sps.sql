@@ -104,6 +104,70 @@ DELIMITER ;
 
 DELIMITER $$
 
+CREATE PROCEDURE Admin_Alterar_Utilizador(
+    IN p_IDUtilizador   INT,
+    IN p_Nome           VARCHAR(100),
+    IN p_Tipo           ENUM('Admin','User','Android'),
+    IN p_Email          VARCHAR(50),
+    IN p_Telemovel      VARCHAR(12),
+    IN p_DataNascimento DATE,
+    IN p_Equipa         INT
+)
+BEGIN
+    DECLARE v_OldEmail VARCHAR(50);
+    DECLARE v_OldTipo  VARCHAR(20);
+    DECLARE v_NewRole  VARCHAR(50);
+    DECLARE v_OldRole  VARCHAR(50);
+
+    -- Get current data
+    SELECT Email, Tipo INTO v_OldEmail, v_OldTipo 
+    FROM Utilizador WHERE IDUtilizador = p_IDUtilizador;
+
+    IF v_OldEmail IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Utilizador não encontrado';
+    END IF;
+
+    -- 1. Update Table
+    UPDATE Utilizador
+    SET
+        Nome           = COALESCE(p_Nome,           Nome),
+        Tipo           = COALESCE(p_Tipo,           Tipo),
+        Email          = COALESCE(p_Email,          Email),
+        Telemovel      = COALESCE(p_Telemovel,      Telemovel),
+        DataNascimento = COALESCE(p_DataNascimento, DataNascimento),
+        Equipa         = COALESCE(p_Equipa,         Equipa)
+    WHERE IDUtilizador = p_IDUtilizador;
+
+    -- 2. Handle MySQL User changes (if email changed)
+    IF p_Email IS NOT NULL AND p_Email <> v_OldEmail THEN
+        SET @sql_rename = CONCAT('RENAME USER ''', v_OldEmail, '''@''%'' TO ''', p_Email, '''@''%''');
+        PREPARE stmt FROM @sql_rename; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+        SET v_OldEmail = p_Email;
+    END IF;
+
+    -- 3. Handle Role changes (if type changed)
+    IF p_Tipo IS NOT NULL AND p_Tipo <> v_OldTipo THEN
+        -- Map roles
+        SET v_OldRole = CASE WHEN v_OldTipo = 'Admin' THEN 'Admin' WHEN v_OldTipo = 'User' THEN 'Utilizador' ELSE 'Android' END;
+        SET v_NewRole = CASE WHEN p_Tipo    = 'Admin' THEN 'Admin' WHEN p_Tipo    = 'User' THEN 'Utilizador' ELSE 'Android' END;
+
+        -- Revoke old, grant new
+        SET @sql_rev = CONCAT('REVOKE `', v_OldRole, '` FROM ''', v_OldEmail, '''@''%''');
+        PREPARE stmt FROM @sql_rev; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+        SET @sql_grant = CONCAT('GRANT `', v_NewRole, '` TO ''', v_OldEmail, '''@''%''');
+        PREPARE stmt FROM @sql_grant; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+        SET @sql_def = CONCAT('SET DEFAULT ROLE `', v_NewRole, '` TO ''', v_OldEmail, '''@''%''');
+        PREPARE stmt FROM @sql_def; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+    END IF;
+
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
 CREATE PROCEDURE Ativar_Gatilho(
     IN p_SalaId INT,
     IN p_Gatilho INT
@@ -174,6 +238,7 @@ CREATE PROCEDURE Criar_Jogo(
     IN p_DataHoraInicio TIMESTAMP,
     IN p_Pontuacao      INT,
     IN p_ArCondicionado BOOLEAN,
+    IN p_IDUtilizador   INT,
     OUT p_IDSimulacao   INT
 )
 BEGIN
@@ -183,14 +248,21 @@ BEGIN
             SET MESSAGE_TEXT = 'Já existe um jogo ativo, não é possível criar outro';
     END IF;
 
-    INSERT INTO Simulacao (Descricao, Equipa, DataHoraInicio, Pontuacao, ArCondicionado, Ativo)
+    -- Check team doesn't already have an active simulation
+    IF EXISTS (SELECT 1 FROM Simulacao WHERE Equipa = p_Equipa AND Ativo = TRUE) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A sua equipa já tem uma simulação ativa';
+    END IF;
+
+    INSERT INTO Simulacao (Descricao, Equipa, DataHoraInicio, Pontuacao, ArCondicionado, Ativo, IDUtilizador)
     VALUES (
         p_Descricao,
         p_Equipa,
         COALESCE(p_DataHoraInicio, CURRENT_TIMESTAMP),
         COALESCE(p_Pontuacao, 0),
         COALESCE(p_ArCondicionado, FALSE),
-        TRUE
+        TRUE,
+        p_IDUtilizador
     );
 
     SET p_IDSimulacao = LAST_INSERT_ID();
@@ -202,28 +274,28 @@ DELIMITER $$
 
 CREATE PROCEDURE Criar_Utilizador(
     IN p_Nome           VARCHAR(100),
-    IN p_Telemovel      VARCHAR(12),
-    IN p_Tipo           ENUM('Admin','Criador','Leitor'),
-    IN p_Email          VARCHAR(50),
+    IN p_Tipo           ENUM('Admin','User','Android'),
+    IN p_Email          VARCHAR(150),
+    IN p_Telemovel      VARCHAR(20),
     IN p_DataNascimento DATE,
-    IN p_Equipa         INT
+    IN p_Equipa         INT,
+    IN p_Password       VARCHAR(100)
 )
 BEGIN
+    DECLARE v_Role VARCHAR(50);
+
     IF p_Nome IS NULL OR TRIM(p_Nome) = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Nome é obrigatório';
     END IF;
-
     IF p_Tipo IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Tipo é obrigatório';
     END IF;
-
     IF p_Email IS NULL OR TRIM(p_Email) = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email é obrigatório';
     END IF;
-
     IF EXISTS (SELECT 1 FROM Utilizador WHERE Email = p_Email) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email já está em uso';
@@ -231,6 +303,42 @@ BEGIN
 
     INSERT INTO Utilizador (Nome, Telemovel, Tipo, Email, DataNascimento, Equipa)
     VALUES (p_Nome, p_Telemovel, p_Tipo, p_Email, p_DataNascimento, p_Equipa);
+
+    IF p_Tipo = 'Admin' THEN
+        SET v_Role = 'Admin';
+    ELSEIF p_Tipo = 'User' THEN
+        SET v_Role = 'Utilizador';
+    ELSEIF p_Tipo = 'Android' THEN
+        SET v_Role = 'Android';
+    END IF;
+
+    SET @sql_create = CONCAT(
+        'CREATE USER IF NOT EXISTS ''', p_Email, '''@''%'' IDENTIFIED BY ''', p_Password, ''''
+    );
+    PREPARE stmt FROM @sql_create;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_alter = CONCAT(
+        'ALTER USER ''', p_Email, '''@''%'' IDENTIFIED BY ''', p_Password, ''''
+    );
+    PREPARE stmt FROM @sql_alter;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_grant = CONCAT(
+        'GRANT `', v_Role, '` TO ''', p_Email, '''@''%'''
+    );
+    PREPARE stmt FROM @sql_grant;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    SET @sql_default = CONCAT(
+        'SET DEFAULT ROLE `', v_Role, '` TO ''', p_Email, '''@''%'''
+    );
+    PREPARE stmt FROM @sql_default;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
 
 END$$
 
@@ -319,7 +427,7 @@ BEGIN
         ELSE
         	UPDATE Corridor
         	SET Fechado = p_Estado
-        	WHERE IDCorridor = p_CorredorId;
+        	WHERE IDCorridor = p_CorredorId AND IDSimulacao = v_IDSimulacao;
 
         	-- Se chegámos aqui sem disparar o Handler, a operação foi concluída
         	-- Retornamos 1 indicando que o estado atual da DB é o solicitado
@@ -360,7 +468,7 @@ BEGIN
     ELSE
     	UPDATE Corridor
         SET Fechado = p_Estado
-        WHERE Fechado != p_Estado;
+        WHERE IDSimulacao = v_IDSimulacao AND Fechado != p_Estado;
 
         -- Se chegámos aqui sem disparar o Handler, a operação foi concluída
         -- Retornamos 1 indicando que o estado atual da DB é o solicitado
@@ -633,14 +741,26 @@ CREATE PROCEDURE Remover_Utilizador(
     IN p_IDUtilizador INT
 )
 BEGIN
+    DECLARE v_Email VARCHAR(50);
+
+    -- Get email before deleting record
+    SELECT Email INTO v_Email FROM Utilizador WHERE IDUtilizador = p_IDUtilizador;
+
     -- Check if user exists
-    IF NOT EXISTS (SELECT 1 FROM Utilizador WHERE IDUtilizador = p_IDUtilizador) THEN
+    IF v_Email IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Utilizador não encontrado';
     END IF;
 
+    -- Delete from table
     DELETE FROM Utilizador
     WHERE IDUtilizador = p_IDUtilizador;
+
+    -- Drop MySQL User
+    SET @sql_drop = CONCAT('DROP USER IF EXISTS ''', v_Email, '''@''%''');
+    PREPARE stmt FROM @sql_drop;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
 
 END$$
 

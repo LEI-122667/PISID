@@ -14,10 +14,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'];
     $dataNasc = $_POST['data_nascimento'] ?: null;
     $equipa = $_POST['equipa'] ?: null;
+    $password = $_POST['password'];
 
     try {
-        $stmt = $pdo->prepare('CALL Criar_Utilizador(?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$nome, $telemovel, $tipo, $email, $dataNasc, $equipa]);
+        $stmt = $pdo->prepare('CALL Criar_Utilizador(?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$nome, $tipo, $email, $telemovel, $dataNasc, $equipa, $password]);
         $success = "Utilizador criado com sucesso!";
     } catch (\PDOException $e) {
         $error = "Erro: " . $e->getMessage();
@@ -65,9 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label>Tipo</label>
                     <select name="tipo" required>
-                        <option value="Leitor">Leitor</option>
-                        <option value="Criador">Criador</option>
+                        <option value="User">User</option>
                         <option value="Admin">Admin</option>
+                        <option value="Android">Android</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -77,6 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label>Equipa (Opcional, ID da Simulação)</label>
                     <input type="number" name="equipa">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required>
                 </div>
                 <button type="submit" class="btn">Criar Utilizador</button>
             </form>

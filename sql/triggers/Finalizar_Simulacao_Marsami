@@ -1,0 +1,37 @@
+DELIMITER $$
+
+CREATE TRIGGER Finalizar_Simulacao_Marsami
+AFTER INSERT ON MedicoesPassagens
+FOR EACH ROW
+BEGIN
+    DECLARE v_TotalMarsamis INT;
+    DECLARE v_MarsamisTerminados INT;
+
+    -- Verificar se a mensagem é de finalização (RoomOrigin=0, RoomDestiny=0, Status=2)
+    IF NEW.SalaOrigem = 0 AND NEW.SalaDestino = 0 AND NEW.Status = 2 THEN
+        
+        -- Obter o número total de marsamis configurados para esta simulação
+        SELECT NumberMarsamis INTO v_TotalMarsamis 
+        FROM SetupMaze 
+        WHERE IDSimulacao = NEW.IDSimulacao 
+        LIMIT 1;
+
+        -- Contar quantos marsamis únicos já enviaram a mensagem de término
+        SELECT COUNT(DISTINCT Marsami) INTO v_MarsamisTerminados
+        FROM MedicoesPassagens
+        WHERE IDSimulacao = NEW.IDSimulacao
+          AND SalaOrigem = 0 
+          AND SalaDestino = 0 
+          AND Status = 2;
+
+        -- Se todos os marsamis terminaram, desativa a simulação
+        IF v_MarsamisTerminados >= v_TotalMarsamis THEN
+            UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
+            
+            INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+            VALUES (NEW.IDSimulacao, NOW(), 0, '0', 0, 'Simulacao', 'Simulação terminada: Todos os marsamis ficaram cansados!', NOW());
+        END IF;
+    END IF;
+END$$
+
+DELIMITER ;

@@ -11,7 +11,8 @@ CREATE TABLE Simulacao (
     DataHoraInicio TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
     Pontuacao      DOUBLE         DEFAULT 0,
     ArCondicionado BOOLEAN        DEFAULT FALSE,
-    Ativo          BOOLEAN        DEFAULT TRUE  
+    Ativo          BOOLEAN        DEFAULT TRUE,
+    IDUtilizador   INT            NULL
 );
 
 -- ─────────────────────────────────────────────
@@ -21,10 +22,10 @@ CREATE TABLE Utilizador (
     IDUtilizador   INT            AUTO_INCREMENT PRIMARY KEY,
     Nome           VARCHAR(100)   NOT NULL,
     Telemovel      VARCHAR(12),
-    Tipo           ENUM('Admin','Criador','Leitor') NOT NULL,
+    Tipo           ENUM('Admin','User','Android') NOT NULL,
     Email          VARCHAR(50)    UNIQUE,
     DataNascimento DATE,
-    Equipa         INT           -- References Simulacao(Equipa)
+    Equipa         INT
 );
 
 -- ─────────────────────────────────────────────

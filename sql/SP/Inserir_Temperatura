@@ -39,12 +39,13 @@ BEGIN
             WHERE Ativo = TRUE 
             LIMIT 1;
 
-            -- Se não houver simulação ativa ou data for futura (Dado Inválido)
-            IF v_IDSimulacao IS NULL OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
-                SELECT -1 AS Result;
-
+            -- Validações:
+            IF v_IDSimulacao IS NULL THEN
+                SELECT -1 AS Result; -- Erro: Nenhuma simulação ativa
+            ELSEIF p_Hora > NOW() + INTERVAL 5 MINUTE THEN
+                SELECT -4 AS Result; -- Erro: Data no futuro (mais de 5 min)
             ELSE
-                -- Tentativa de Inserção (Removida a lógica de validação do AC para permitir dados com delay)
+                -- Tentativa de Inserção
                 INSERT INTO Temperatura (IDSimulacao, Hora, Temperatura, MongoId)
                 VALUES (v_IDSimulacao, p_Hora, p_Temperatura, p_MongoId);
                 SELECT 1 AS Result;

@@ -2,8 +2,8 @@
 session_start();
 require_once 'db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['tipo'] !== 'Criador') {
-    header('Location: dashboard.php');
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php');
     exit;
 }
 
@@ -18,25 +18,49 @@ $stmt = $pdo->prepare("SELECT * FROM Simulacao WHERE IDSimulacao = ?");
 $stmt->execute([$id_simulacao]);
 $simulacao = $stmt->fetch();
 
-if (!$simulacao || $simulacao['Equipa'] != $_SESSION['equipa']) {
+if (!$simulacao) {
+    die("Simulação não encontrada.");
+}
+
+$user_id = $_SESSION['user_id'];
+$user_tipo = $_SESSION['tipo'];
+$user_equipa = $_SESSION['equipa'];
+
+// Access control: Admins see everything. Users only see their team.
+if ($user_tipo !== 'Admin' && $simulacao['Equipa'] != $user_equipa) {
     die("Acesso negado. Esta simulação não pertence à sua equipa.");
 }
-if ($simulacao['Ativo']) {
+
+// Ownership check: 
+// 1. Admins can always edit.
+// 2. Creator (IDUtilizador) can edit.
+// 3. For legacy records where IDUtilizador is NULL, anyone from the same team can edit.
+$is_owner = ($user_tipo === 'Admin') || 
+            ($simulacao['IDUtilizador'] == $user_id) || 
+            ($simulacao['IDUtilizador'] === null && $simulacao['Equipa'] == $user_equipa);
+
+$readonly = !$is_owner;
+
+if ($simulacao['Ativo'] && !$readonly) {
+    // If it's active, we usually don't want to edit score/description while it's running
+    // But if the user wants to be able to, we could. For now, let's keep the active check
+    // but maybe just warn instead of die? The user said "cant access criar_jogo until its done"
+    // which implies they have to wait.
     die("Não é possível alterar uma simulação ativa.");
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (!$readonly && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $descricao = $_POST['descricao'];
     $pontuacao = (int)$_POST['pontuacao'];
-    $ac = isset($_POST['ar_condicionado']) ? 1 : 0;
 
     try {
-        // Direct update to bypass MySQL USER() check in the SP which fails with PDO root
-        $stmt = $pdo->prepare("UPDATE Simulacao SET Descricao = ?, Pontuacao = ?, ArCondicionado = ? WHERE IDSimulacao = ?");
-        $stmt->execute([$descricao, $pontuacao, $ac, $id_simulacao]);
-        
+        // If it was NULL, we might want to take ownership or just leave it NULL.
+        // Let's leave it NULL or set it if the user is the one editing.
+        $stmt = $pdo->prepare("UPDATE Simulacao SET Descricao = ?, Pontuacao = ? WHERE IDSimulacao = ?");
+        $stmt->execute([$descricao, $pontuacao, $id_simulacao]);
+
         $success = "Simulação atualizada com sucesso!";
-        
+
         // Refresh
         $stmt = $pdo->prepare("SELECT * FROM Simulacao WHERE IDSimulacao = ?");
         $stmt->execute([$id_simulacao]);
@@ -50,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <title>Alterar Jogo</title>
+    <title>Ver / Alterar Jogo</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -62,8 +86,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <div class="container">
         <div class="glass-panel" style="max-width: 600px; margin: 0 auto;">
-            <h2>Alterar Jogo #<?= htmlspecialchars($id_simulacao) ?></h2>
-            
+            <h2>
+                <?= $readonly ? 'Ver' : 'Alterar' ?> Jogo #<?= htmlspecialchars($id_simulacao) ?>
+                <?php if ($readonly): ?>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); margin-left: 1rem;">(apenas leitura — não és o criador)</span>
+                <?php endif; ?>
+            </h2>
+
             <?php if (isset($error)): ?>
                 <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
@@ -74,19 +103,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST">
                 <div class="form-group">
                     <label>Descrição</label>
-                    <input type="text" name="descricao" value="<?= htmlspecialchars($simulacao['Descricao']) ?>" required>
+                    <input type="text" name="descricao" value="<?= htmlspecialchars($simulacao['Descricao']) ?>"
+                        <?= $readonly ? 'disabled' : 'required' ?>>
                 </div>
                 <div class="form-group">
                     <label>Pontuação</label>
-                    <input type="number" name="pontuacao" value="<?= htmlspecialchars($simulacao['Pontuacao']) ?>" required>
+                    <input type="number" name="pontuacao" value="<?= htmlspecialchars($simulacao['Pontuacao']) ?>"
+                        <?= $readonly ? 'disabled' : 'required' ?>>
                 </div>
                 <div class="form-group">
-                    <label>
-                        <input type="checkbox" name="ar_condicionado" style="width: auto; display: inline-block;" <?= $simulacao['ArCondicionado'] ? 'checked' : '' ?>>
-                        Ar Condicionado Ligado
-                    </label>
+                    <label>Equipa</label>
+                    <input type="text" value="<?= htmlspecialchars($simulacao['Equipa']) ?>" disabled>
                 </div>
-                <button type="submit" class="btn">Atualizar Jogo</button>
+                <div class="form-group">
+                    <label>Data de Início</label>
+                    <input type="text" value="<?= htmlspecialchars($simulacao['DataHoraInicio']) ?>" disabled>
+                </div>
+
+                <?php if (!$readonly): ?>
+                    <button type="submit" class="btn">Atualizar Jogo</button>
+                <?php else: ?>
+                    <a href="simulations.php" class="btn btn-secondary">Voltar às Simulações</a>
+                <?php endif; ?>
             </form>
         </div>
     </div>

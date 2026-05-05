@@ -1,5 +1,5 @@
 <?php
-$host = 'mysql';
+$host = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? '127.0.0.1' : 'mysql';
 $db   = 'bd_pisid';
 $user = 'root';
 $pass = 'root';

@@ -2,23 +2,35 @@
 session_start();
 require_once 'db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['tipo'] !== 'Criador') {
+// Only Admin and User types can create games
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['tipo'], ['Admin', 'User'])) {
     header('Location: dashboard.php');
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$equipa = $_SESSION['equipa'];
+$user_id = $_SESSION['user_id'];
+$success = null; // Inicializar como null para não aparecer a caixa vazia
+$error = null;
+
+// Check if team already has an active simulation
+$activeCheck = $pdo->prepare("SELECT IDSimulacao FROM Simulacao WHERE Equipa = ? AND Ativo = TRUE LIMIT 1");
+$activeCheck->execute([$equipa]);
+$activeSimulation = $activeCheck->fetch();
+
+if ($activeSimulation) {
+    $blocked = "A sua equipa já tem uma simulação ativa (ID #{$activeSimulation['IDSimulacao']}). Aguarde que termine antes de criar uma nova.";
+}
+
+if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $descricao = $_POST['descricao'];
-    $equipa = $_POST['equipa'];
-    $ac = isset($_POST['ar_condicionado']) ? 1 : 0;
 
     // Params for script
     $out_temp = $_POST['outliers_temp'];
-    $out_som = $_POST['outliers_som'];
+    $out_som  = $_POST['outliers_som'];
     $al_temp_h = $_POST['alerta_temp_h'];
     $al_temp_l = $_POST['alerta_temp_l'];
-    $al_som = $_POST['alerta_som'];
-
+    $al_som    = $_POST['alerta_som'];
     $amt_gatilhos = $_POST['amt_gatilhos'];
 
     if ($_POST['fechar_por'] === 'tempo') {
@@ -30,28 +42,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // 1. Criar o jogo na BD Local
         $pdo->beginTransaction();
 
-        // Call the SP (which internally checks for active simulations)
-        $stmt = $pdo->prepare("CALL Criar_Jogo(?, ?, CURRENT_TIMESTAMP, 0, ?, @id_sim)");
-        $stmt->execute([$descricao, $equipa, $ac]);
+        $stmt = $pdo->prepare("CALL Criar_Jogo(?, ?, CURRENT_TIMESTAMP, 0, 0, ?, @id_sim)");
+        $stmt->execute([$descricao, $equipa, $user_id]);
 
         $res = $pdo->query("SELECT @id_sim AS id_sim")->fetch(PDO::FETCH_ASSOC);
         $id_sim = $res['id_sim'];
 
         $pdo->commit();
 
-        // 2. Iniciar a simulação (Note: .exe won't run in Linux/Docker)
-        $cmdMazerun = "../mazerun/mazerun.exe " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > /dev/null 2>&1 &";
-        exec($cmdMazerun);
+        // 1. Run Python Synchronization Script
+        $pythonExec = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? 'python' : 'python3';
+        $scriptPath = realpath(__DIR__ . "/../scripts/nuvemToDBs/htmlNuvemToDatabases.py");
 
+<<<<<<< HEAD
         // 3. Esperar 1 segundo para a simulação inserir tabelas na Nuvem
         sleep(1);
 
         // 4. Execute python script para sincronizar Nuvem -> DB Local e Mongo
         $cmd = escapeshellcmd("python3 ../scripts/nuvemToDBs/htmlNuvemToDatabases.py " .
         // CHamar novo script de .exe
+=======
+        $cmd = escapeshellcmd("$pythonExec \"$scriptPath\" " .
+>>>>>>> bc6d4905916e68b488381edafaf781827f049979
             escapeshellarg($id_sim) . " " .
             escapeshellarg($out_temp) . " " .
             escapeshellarg($out_som) . " " .
@@ -64,25 +78,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $output = shell_exec("$cmd 2>&1") ?? '(sem output)';
 
-        $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output);
+        // 2. Call local launcher server on host PC
+        $launcherUrl = "http://host.docker.internal:9999/launch?equipa=" . urlencode($equipa);
+        $launcherResponse = @file_get_contents($launcherUrl);
+
+        if ($launcherResponse === "OK") {
+            $success .= " | MazeRun lançado com sucesso.";
+        } else {
+            $error = "Launcher não respondeu. Certifique-se que local_launcher_server.py está a correr no PC.";
+        }
+
+        if (!$error) {
+            $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output) . $success;
+        }
 
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
+        if ($pdo->inTransaction()) $pdo->rollBack();
         $error = "Erro: " . $e->getMessage();
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
     <meta charset="UTF-8">
     <title>Criar Jogo</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
     <div class="nav-bar">
         <h3>PISID</h3>
@@ -94,13 +116,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="glass-panel" style="max-width: 800px; margin: 0 auto;">
             <h2>Criar Novo Jogo</h2>
 
-            <?php if (isset($error)): ?>
+            <?php if (isset($blocked)): ?>
+                <div class="alert alert-error"><?= htmlspecialchars($blocked) ?></div>
+            <?php elseif (isset($error)): ?>
                 <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
-            <?php endif; ?>
-            <?php if (isset($success)): ?>
+            <?php elseif (isset($success)): ?>
                 <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
             <?php endif; ?>
 
+            <?php if (!isset($blocked)): ?>
             <form method="POST">
                 <div class="dashboard-grid" style="margin-top: 0;">
                     <div>
@@ -109,17 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label>Descrição</label>
                             <input type="text" name="descricao" required>
                         </div>
-                        <div class="form-group">
-                            <label>Equipa</label>
-                            <input type="number" name="equipa" required>
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" name="ar_condicionado"
-                                    style="width: auto; display: inline-block;">
-                                Ar Condicionado Ligado
-                            </label>
-                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Equipa: <strong><?= htmlspecialchars($equipa) ?></strong></p>
                     </div>
 
                     <div>
@@ -161,22 +175,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <button type="submit" class="btn" style="margin-top: 2rem;">Criar Jogo e Sincronizar</button>
             </form>
+            <?php endif; ?>
         </div>
     </div>
     <script>
-        document.getElementById('fechar_por').addEventListener('change', function () {
+        document.getElementById('fechar_por')?.addEventListener('change', function () {
             var input = document.getElementById('fechar_valor');
             if (this.value === 'tempo') {
-                input.step = "1";
-                input.value = "10";
-                input.placeholder = "Valor em segundos (ex: 10)";
+                input.step = "1"; input.value = "10"; input.placeholder = "Valor em segundos (ex: 10)";
             } else {
-                input.step = "0.01";
-                input.value = "0.8";
-                input.placeholder = "Valor em % (ex: 0.8)";
+                input.step = "0.01"; input.value = "0.8"; input.placeholder = "Valor em % (ex: 0.8)";
             }
         });
     </script>
 </body>
-
 </html>

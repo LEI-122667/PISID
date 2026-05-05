@@ -204,44 +204,61 @@ def run_agente():
                 conn.commit()
                 
             elif sensor == '0': # Movimento
-                print(f"[Movimento] Fechar corredores da Sala {sala}...")
-                cursor.execute("SELECT IDCorridor, RoomA, RoomB FROM Corridor WHERE (RoomA = %s OR RoomB = %s) AND IDSimulacao = %s", (sala, sala, id_simulacao))
-                corredores = cursor.fetchall()
+                if int(sala) == 0:
+                    print(f"🏁 [Info] Sensor 0 na Sala 0. A ignorar (Fim de Jogo/Entrada).")
+                    conn.close()
+                    time.sleep(0.5)
+                    continue
+
+                # Verificar se o som_lock está ativo (corredores já fechados globalmente)
+                is_som_locked = som_lock.locked()
                 
-                # 1. Fechar as portas
-                for c in corredores:
-                    c_id = c['IDCorridor']
-                    room_a = c['RoomA']
-                    room_b = c['RoomB']
+                if not is_som_locked:
+                    print(f"[Movimento] Fechar corredores da Sala {sala}...")
+                    cursor.execute("SELECT IDCorridor, RoomA, RoomB FROM Corridor WHERE (RoomA = %s OR RoomB = %s) AND IDSimulacao = %s", (sala, sala, id_simulacao))
+                    corredores = cursor.fetchall()
                     
-                    cursor.callproc("Fechar_Abrir_Corredor", (c_id, 1))
-                    send_mqtt_action({"Type": "CloseDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
-                for _ in cursor.stored_results(): pass
-                conn.commit()
-                
-                # 2. Ativar Gatilhos e enviar MQTT
+                    # 1. Fechar as portas
+                    for c in corredores:
+                        c_id = c['IDCorridor']
+                        room_a = c['RoomA']
+                        room_b = c['RoomB']
+                        
+                        cursor.callproc("Fechar_Abrir_Corredor", (c_id, 1))
+                        send_mqtt_action({"Type": "CloseDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
+                    for _ in cursor.stored_results(): pass
+                    conn.commit()
+                else:
+                    print(f"[Movimento] som_lock ATIVO. Ignorar fecho de portas na Sala {sala}.")
+
+                # 2. Ativar Gatilhos e enviar MQTT (Sempre acontece)
                 amt_gatilhos = config.get('amount_of_gatilhos', 3)
-                print(f"[Movimento] Ativar {amt_gatilhos} gatilhos na Sala {sala}...")
-                cursor.callproc("Ativar_Gatilho", (sala, amt_gatilhos))
-                for _ in cursor.stored_results(): pass
-                conn.commit()
+                print(f"[Movimento] Ativar {amt_gatilhos} gatilhos na Sala {sala} (um de cada vez)...")
                 
-                for _ in range(amt_gatilhos):
+                for i in range(amt_gatilhos):
+                    # Chamamos a procedure 1 a 1 para disparar o trigger de pontuação múltiplas vezes
+                    cursor.callproc("Ativar_Gatilho", (sala, 1))
                     send_mqtt_action({"Type": "Score", "Player": 2, "Room": sala})
-                    
-                time.sleep(1) # Aguarda um pouco para as portas não abrirem instantaneamente
                 
-                # 3. Abrir as portas novamente
-                print(f"[Movimento] Abrir corredores da Sala {sala}...")
-                for c in corredores:
-                    c_id = c['IDCorridor']
-                    room_a = c['RoomA']
-                    room_b = c['RoomB']
-                    
-                    cursor.callproc("Fechar_Abrir_Corredor", (c_id, 0))
-                    send_mqtt_action({"Type": "OpenDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
                 for _ in cursor.stored_results(): pass
                 conn.commit()
+                    
+                if not is_som_locked:
+                    time.sleep(1) # Aguarda um pouco para as portas não abrirem instantaneamente
+                    
+                    # 3. Abrir as portas novamente
+                    print(f"[Movimento] Abrir corredores da Sala {sala}...")
+                    for c in corredores:
+                        c_id = c['IDCorridor']
+                        room_a = c['RoomA']
+                        room_b = c['RoomB']
+                        
+                        cursor.callproc("Fechar_Abrir_Corredor", (c_id, 0))
+                        send_mqtt_action({"Type": "OpenDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
+                    for _ in cursor.stored_results(): pass
+                    conn.commit()
+                else:
+                    print(f"[Movimento] som_lock ATIVO. Portas permanecem fechadas na Sala {sala}.")
                 
         except Exception as e:
             print(f"[Error in Main Loop] {e}")

@@ -37,10 +37,11 @@ BEGIN
             -- 4. OBTER CONTEXTO DA SIMULAÇÃO
             SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1;
             
-            -- Se não houver simulação ativa ou data futura
-            IF v_IDSimulacao IS NULL OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
-                SELECT -1 AS Result;
-            
+            -- Validações:
+            IF v_IDSimulacao IS NULL THEN
+                SELECT -1 AS Result; -- Erro: Nenhuma simulação ativa
+            ELSEIF p_Hora > NOW() + INTERVAL 5 MINUTE THEN
+                SELECT -4 AS Result; -- Erro: Data no futuro (mais de 5 min)
             ELSE
                 -- Obter o número máximo de salas configurado para esta simulação
                 SELECT NumberRooms INTO v_MaxRooms FROM SetupMaze WHERE IDSimulacao = v_IDSimulacao LIMIT 1;

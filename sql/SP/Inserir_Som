@@ -37,19 +37,18 @@ BEGIN
             WHERE Ativo = TRUE 
             LIMIT 1;
 
-            -- Validações de "Dado Inválido" (-1)
-            -- - Som não pode ser negativo
-            -- - Deve haver uma simulação ativa
-            -- - A data não pode ser futura
-            IF v_IDSimulacao IS NULL OR p_Som < 0 OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
-                SELECT -1 AS Result;
-
+            -- Validações:
+            IF v_IDSimulacao IS NULL THEN
+                SELECT -1 AS Result; -- Erro: Nenhuma simulação ativa
+            ELSEIF p_Som < 0 THEN
+                SELECT -3 AS Result; -- Erro: Valor negativo
+            ELSEIF p_Hora > NOW() + INTERVAL 5 MINUTE THEN
+                SELECT -4 AS Result; -- Erro: Data no futuro (mais de 5 min)
             ELSE
                 -- Tentativa de Inserção
                 INSERT INTO Som (IDSimulacao, Hora, Som, MongoId)
                 VALUES (v_IDSimulacao, p_Hora, p_Som, p_MongoId);
                 
-                -- Se a inserção falhar sem erro crítico (ex: 0 linhas afetadas)
                 IF ROW_COUNT() > 0 THEN
                     SELECT 1 AS Result;
                 ELSE
