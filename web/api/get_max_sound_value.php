@@ -3,7 +3,6 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-// Estrutura padrão para o seu Android processar sem erros
 $response = array('success' => false, 'message' => '', 'data' => null);
 
 $username = $_REQUEST['username'] ?? '';
@@ -16,13 +15,8 @@ if (empty($username) || empty($password) || empty($database)) {
     exit;
 }
 
-// Configuração Docker
-$host = 'mysql'; 
-$db_user = $username; 
-$db_pass = $password; 
-
-// Conexão mysqli
-$conn = new mysqli($host, $db_user, $db_pass, $database);
+$host = 'mysql';
+$conn = new mysqli($host, $username, $password, $database);
 
 if ($conn->connect_error) {
     $response['message'] = "Erro de conexão: " . $conn->connect_error;
@@ -30,17 +24,26 @@ if ($conn->connect_error) {
     exit;
 }
 
-// Query para obter o valor máximo de som
-$sql = "SELECT alerta_som AS maximo FROM ConfigJogo WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1) LIMIT 1";
+$sql = "SELECT 
+    (sm.NormalNoise + sm.NoiseVarToleration) AS maximo,
+    cj.alerta_som AS offset
+FROM SetupMaze sm
+JOIN ConfigJogo cj ON sm.IDSimulacao = cj.IDSimulacao
+WHERE sm.IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1)
+LIMIT 1
+";
+
 $result = $conn->query($sql);
 
 if ($result) {
     $row = $result->fetch_assoc();
-    
     if ($row) {
         $response['success'] = true;
-        $response['data'] = $row; // Retorna o objeto: {"maximo": "valor"}
-        $response['message'] = 'Configuração de som carregada.';
+        $response['data'] = array(
+            "maximo" => (float) $row['maximo'],
+            "offset" => (float) $row['offset']
+        );
+        $response['message'] = 'Configuração de som carregada com offset.';
     } else {
         $response['message'] = 'Nenhuma configuração de som encontrada.';
     }

@@ -9,7 +9,7 @@ $username = $_REQUEST['username'] ?? '';
 $password = $_REQUEST['password'] ?? '';
 $database = $_REQUEST['database'] ?? '';
 
-$host = 'mysql'; // No Docker use o nome do serviço
+$host = 'mysql'; 
 
 $conn = new mysqli($host, $username, $password, $database);
 
@@ -19,14 +19,26 @@ if ($conn->connect_error) {
     exit;
 }
 
-$sql = "SELECT alerta_temperatura_low AS minimo, alerta_temperatura_high AS maximo FROM ConfigJogo WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1) LIMIT 1";
+$sql = "SELECT 
+    (sm.NormalTemperature - sm.TemperatureVarLowToleration) AS minimo,
+    (sm.NormalTemperature + sm.TemperatureVarHighToleration) AS maximo,
+    cj.alerta_temperatura_low AS offset_min,
+    cj.alerta_temperatura_high AS offset_max
+FROM SetupMaze sm
+JOIN ConfigJogo cj ON sm.IDSimulacao = cj.IDSimulacao
+WHERE sm.IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1)
+LIMIT 1
+";
+
 $result = $conn->query($sql);
 
 if ($result && $row = $result->fetch_assoc()) {
     $response['success'] = true;
     $response['data'] = array(
-        "minimo" => (float)$row['minimo'],
-        "maximo" => (float)$row['maximo']
+        "minimo" => (float) $row['minimo'],
+        "maximo" => (float) $row['maximo'],
+        "offset_min" => (float) $row['offset_min'],
+        "offset_max" => (float) $row['offset_max']
     );
 } else {
     $response['message'] = "Não foram encontrados limites na tabela.";
@@ -34,3 +46,4 @@ if ($result && $row = $result->fetch_assoc()) {
 
 $conn->close();
 echo json_encode($response);
+?>
