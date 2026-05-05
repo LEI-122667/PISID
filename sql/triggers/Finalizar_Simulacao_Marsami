@@ -29,7 +29,7 @@ BEGIN
             UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
             
             INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-            VALUES (NEW.IDSimulacao, NOW(), 0, '0', 0, 'Simulacao', 'Simulação terminada: Todos os marsamis concluíram o percurso!', NOW());
+            VALUES (NEW.IDSimulacao, NOW(), 0, '0', 0, 'Simulacao', 'Simulação terminada: Todos os marsamis ficaram cansados!', NOW());
         END IF;
     END IF;
 END$$
