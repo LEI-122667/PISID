@@ -12,7 +12,7 @@ BEGIN
     DECLARE v_CorredoresAbertos INT DEFAULT 0;
 
     -- Procurar a simulação que o utilizador quer ver no dashboard (Ativa)
-    SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1;
+    SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE ORDER BY IDSimulacao DESC LIMIT 1;
 
     IF v_IDSimulacao IS NOT NULL THEN
         -- Buscar limites especificamente para os dados que acabaram de entrar (NEW)

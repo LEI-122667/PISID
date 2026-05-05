@@ -50,18 +50,11 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->commit();
 
-        // Start mazerun
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $cmdMazerun = "start /B ..\\mazerun\\mazerun.exe " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > NUL 2>&1";
-            pclose(popen($cmdMazerun, "r"));
-        } else {
-            $cmdMazerun = "../mazerun/mazerun.exe " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > /dev/null 2>&1 &";
-            exec($cmdMazerun);
-        }
+        // 1. Run Python Synchronization Script
+        $pythonExec = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? 'python' : 'python3';
+        $scriptPath = realpath(__DIR__ . "/../scripts/nuvemToDBs/htmlNuvemToDatabases.py");
 
-        sleep(1);
-
-        $cmd = escapeshellcmd("python3 ../scripts/nuvemToDBs/htmlNuvemToDatabases.py " .
+        $cmd = escapeshellcmd("$pythonExec \"$scriptPath\" " .
             escapeshellarg($id_sim) . " " .
             escapeshellarg($out_temp) . " " .
             escapeshellarg($out_som) . " " .
@@ -73,7 +66,28 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             escapeshellarg($amt_gatilhos));
 
         $output = shell_exec("$cmd 2>&1") ?? '(sem output)';
-        $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output);
+
+        // 2. Start mazerun (Now as the last thing)
+        $mazerunPath = realpath(__DIR__ . "/../mazerun/mazerun.exe");
+        if ($mazerunPath && strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $cmdMazerun = "cmd /c start \"MazeRun\" \"$mazerunPath\" " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883";
+            $handle = popen($cmdMazerun, "r");
+            if ($handle !== false) {
+                pclose($handle);
+                $success .= " | Comando enviado: $cmdMazerun";
+            } else {
+                $error = "Erro ao abrir o processo mazerun.exe";
+            }
+        } else if ($mazerunPath) {
+            $cmdMazerun = "$mazerunPath " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > /dev/null 2>&1 &";
+            exec($cmdMazerun);
+        } else {
+            $error = "Erro: mazerun.exe não encontrado no caminho esperado.";
+        }
+
+        if (!isset($error)) {
+            $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output);
+        }
 
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();

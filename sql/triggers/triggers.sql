@@ -5,11 +5,11 @@ DROP TRIGGER IF EXISTS Alerta_Temperatura;
 DROP TRIGGER IF EXISTS Alerta_Som;
 DROP TRIGGER IF EXISTS Inserir_Marsamis;
 DROP TRIGGER IF EXISTS Pontuacao_gatilho;
-DROP TRIGGER IF EXISTS Alerta_Odd_Even;
 DROP TRIGGER IF EXISTS Alerta_Odd_Even_Update;
 DROP TRIGGER IF EXISTS Alerta_Odd_Even_Insert;
 DROP TRIGGER IF EXISTS Finalizar_Simulacao_Temperatura;
 DROP TRIGGER IF EXISTS Finalizar_Simulacao_Som;
+DROP TRIGGER IF EXISTS Finalizar_Simulacao_Marsami;
 
 -- ─────────────────────────────────────────────
 -- 1. Alerta_Temperatura
@@ -34,6 +34,7 @@ BEGIN
     SELECT IDSimulacao INTO v_IDSimulacao
     FROM Simulacao
     WHERE Ativo = TRUE
+    ORDER BY IDSimulacao DESC
     LIMIT 1;
 
     IF v_IDSimulacao IS NOT NULL THEN
@@ -99,6 +100,7 @@ BEGIN
     SELECT IDSimulacao INTO v_IDSimulacao
     FROM Simulacao
     WHERE Ativo = TRUE
+    ORDER BY IDSimulacao DESC
     LIMIT 1;
 
     IF v_IDSimulacao IS NOT NULL THEN
@@ -236,61 +238,41 @@ END$$
 DELIMITER ;
 
 -- ─────────────────────────────────────────────
--- 6. Finalizar_Simulacao_Temperatura
+-- 6. Finalizar_Simulacao_Marsami
 -- ─────────────────────────────────────────────
 DELIMITER $$
 
-CREATE TRIGGER Finalizar_Simulacao_Temperatura
-AFTER INSERT ON Temperatura
+CREATE TRIGGER Finalizar_Simulacao_Marsami
+AFTER INSERT ON MedicoesPassagens
 FOR EACH ROW
 BEGIN
-    DECLARE normalTemp DECIMAL(6,2);
-    DECLARE tempHighTol DECIMAL(6,2);
-    DECLARE tempLowTol DECIMAL(6,2);
-    DECLARE limiteSuperior DECIMAL(6,2);
-    DECLARE limiteInferior DECIMAL(6,2);
+    DECLARE v_TotalMarsamis INT;
+    DECLARE v_MarsamisTerminados INT;
 
-    SELECT NormalTemperature, TemperatureVarHighToleration, TemperatureVarLowToleration
-    INTO normalTemp, tempHighTol, tempLowTol
-    FROM SetupMaze
-    WHERE IDSimulacao = NEW.IDSimulacao
-    LIMIT 1;
-
-    SET limiteSuperior = normalTemp + tempHighTol;
-    SET limiteInferior = normalTemp - tempLowTol;
-
-    IF NEW.Temperatura >= limiteSuperior OR NEW.Temperatura <= limiteInferior THEN
-        UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
+    -- Verificar se a mensagem é de finalização (RoomOrigin=0, RoomDestiny=0, Status=2)
+    IF NEW.SalaOrigem = 0 AND NEW.SalaDestino = 0 AND NEW.Status = 2 THEN
         
-        INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao, NOW(), 0, '1', NEW.Temperatura, 'Temperatura', 'Simulação terminada: Limite de temperatura atingido!', NOW());
-    END IF;
-END$$
+        -- Obter o número total de marsamis configurados para esta simulação
+        SELECT NumberMarsamis INTO v_TotalMarsamis 
+        FROM SetupMaze 
+        WHERE IDSimulacao = NEW.IDSimulacao 
+        LIMIT 1;
 
--- ─────────────────────────────────────────────
--- 7. Finalizar_Simulacao_Som
--- ─────────────────────────────────────────────
-CREATE TRIGGER Finalizar_Simulacao_Som
-AFTER INSERT ON Som
-FOR EACH ROW
-BEGIN
-    DECLARE normalNoise DECIMAL(6,2);
-    DECLARE noiseTol DECIMAL(6,2);
-    DECLARE limite DECIMAL(6,2);
+        -- Contar quantos marsamis únicos já enviaram a mensagem de término
+        SELECT COUNT(DISTINCT Marsami) INTO v_MarsamisTerminados
+        FROM MedicoesPassagens
+        WHERE IDSimulacao = NEW.IDSimulacao
+          AND SalaOrigem = 0 
+          AND SalaDestino = 0 
+          AND Status = 2;
 
-    SELECT NormalNoise, NoiseVarToleration
-    INTO normalNoise, noiseTol
-    FROM SetupMaze
-    WHERE IDSimulacao = NEW.IDSimulacao
-    LIMIT 1;
-
-    SET limite = normalNoise + noiseTol;
-
-    IF NEW.Som >= limite THEN
-        UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
-        
-        INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-        VALUES (NEW.IDSimulacao, NOW(), 0, '2', NEW.Som, 'Som', 'Simulação terminada: Limite de ruído atingido!', NOW());
+        -- Se todos os marsamis terminaram, desativa a simulação
+        IF v_MarsamisTerminados >= v_TotalMarsamis THEN
+            UPDATE Simulacao SET Ativo = FALSE WHERE IDSimulacao = NEW.IDSimulacao;
+            
+            INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+            VALUES (NEW.IDSimulacao, NOW(), 0, '0', 0, 'Simulacao', 'Simulação terminada: Todos os marsamis concluíram o percurso!', NOW());
+        END IF;
     END IF;
 END$$
 

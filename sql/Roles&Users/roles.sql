@@ -12,9 +12,9 @@ CREATE ROLE IF NOT EXISTS 'ScriptMovimento';
 
 -- ─────────────────────────────────────────────
 -- Admin
--- Full CRUD on Utilizador + SP execution
+-- Read on Utilizador + SP execution (No direct CUD allowed)
 -- ─────────────────────────────────────────────
-GRANT SELECT, INSERT, UPDATE, DELETE ON bd_pisid.Utilizador TO 'Admin';
+GRANT SELECT ON bd_pisid.Utilizador TO 'Admin';
 
 GRANT EXECUTE ON PROCEDURE bd_pisid.Criar_Utilizador    TO 'Admin';
 GRANT EXECUTE ON PROCEDURE bd_pisid.Remover_Utilizador  TO 'Admin';
@@ -40,6 +40,7 @@ GRANT SELECT ON bd_pisid.OcupacaoLabirinto  TO 'Android';
 GRANT SELECT ON bd_pisid.Som                TO 'Android';
 GRANT SELECT ON bd_pisid.Simulacao          TO 'Android';
 GRANT SELECT ON bd_pisid.ConfigJogo         TO 'Android';
+GRANT SELECT ON bd_pisid.SetupMaze          TO 'Android';
 
 -- ─────────────────────────────────────────────
 -- AgentSimulacao

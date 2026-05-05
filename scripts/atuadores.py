@@ -40,8 +40,15 @@ def verificar_regras():
             conn.commit()
 
         # 2. REGRA DA TEMPERATURA (Ar Condicionado)
-        # Vamos buscar os limites à tabela SetupMaze
-        cursor.execute("SELECT NormalTemperature, TemperatureVarHighToleration FROM SetupMaze LIMIT 1")
+        # Vamos buscar os limites à tabela SetupMaze da simulação ativa mais recente
+        cursor.execute("""
+            SELECT S.NormalTemperature, S.TemperatureVarHighToleration 
+            FROM SetupMaze S
+            JOIN Simulacao Sim ON S.IDSimulacao = Sim.IDSimulacao
+            WHERE Sim.Ativo = TRUE
+            ORDER BY Sim.IDSimulacao DESC
+            LIMIT 1
+        """)
         setup = cursor.fetchone()
 
         if setup:
