@@ -56,16 +56,13 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pythonExec = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? 'python' : 'python3';
         $scriptPath = realpath(__DIR__ . "/../scripts/nuvemToDBs/htmlNuvemToDatabases.py");
 
-<<<<<<< HEAD
         // 3. Esperar 1 segundo para a simulação inserir tabelas na Nuvem
         sleep(1);
 
         // 4. Execute python script para sincronizar Nuvem -> DB Local e Mongo
         $cmd = escapeshellcmd("python3 ../scripts/nuvemToDBs/htmlNuvemToDatabases.py " .
         // CHamar novo script de .exe
-=======
         $cmd = escapeshellcmd("$pythonExec \"$scriptPath\" " .
->>>>>>> bc6d4905916e68b488381edafaf781827f049979
             escapeshellarg($id_sim) . " " .
             escapeshellarg($out_temp) . " " .
             escapeshellarg($out_som) . " " .
