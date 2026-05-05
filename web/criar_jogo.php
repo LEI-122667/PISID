@@ -10,6 +10,8 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['tipo'], ['Admin', 'User
 
 $equipa = $_SESSION['equipa'];
 $user_id = $_SESSION['user_id'];
+$success = null; // Inicializar como null para não aparecer a caixa vazia
+$error = null;
 
 // Check if team already has an active simulation
 $activeCheck = $pdo->prepare("SELECT IDSimulacao FROM Simulacao WHERE Equipa = ? AND Ativo = TRUE LIMIT 1");
@@ -67,26 +69,18 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $output = shell_exec("$cmd 2>&1") ?? '(sem output)';
 
-        // 2. Start mazerun (Now as the last thing)
-        $mazerunPath = realpath(__DIR__ . "/../mazerun/mazerun.exe");
-        if ($mazerunPath && strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $cmdMazerun = "cmd /c start \"MazeRun\" \"$mazerunPath\" " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883";
-            $handle = popen($cmdMazerun, "r");
-            if ($handle !== false) {
-                pclose($handle);
-                $success .= " | Comando enviado: $cmdMazerun";
-            } else {
-                $error = "Erro ao abrir o processo mazerun.exe";
-            }
-        } else if ($mazerunPath) {
-            $cmdMazerun = "$mazerunPath " . escapeshellarg($equipa) . " --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883 > /dev/null 2>&1 &";
-            exec($cmdMazerun);
+        // 2. Call local launcher server on host PC
+        $launcherUrl = "http://host.docker.internal:9999/launch?equipa=" . urlencode($equipa);
+        $launcherResponse = @file_get_contents($launcherUrl);
+
+        if ($launcherResponse === "OK") {
+            $success .= " | MazeRun lançado com sucesso.";
         } else {
-            $error = "Erro: mazerun.exe não encontrado no caminho esperado.";
+            $error = "Launcher não respondeu. Certifique-se que local_launcher_server.py está a correr no PC.";
         }
 
-        if (!isset($error)) {
-            $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output);
+        if (!$error) {
+            $success = "Jogo criado com sucesso! Sincronização: " . htmlspecialchars($output) . $success;
         }
 
     } catch (Exception $e) {
