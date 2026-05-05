@@ -204,6 +204,12 @@ def run_agente():
                 conn.commit()
                 
             elif sensor == '0': # Movimento
+                if int(sala) == 0:
+                    print(f"🏁 [Info] Sensor 0 na Sala 0. A ignorar (Fim de Jogo/Entrada).")
+                    conn.close()
+                    time.sleep(0.5)
+                    continue
+
                 # Verificar se o som_lock está ativo (corredores já fechados globalmente)
                 is_som_locked = som_lock.locked()
                 
