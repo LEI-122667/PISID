@@ -1,10 +1,19 @@
 from mongoToMqtt import mongoToMqtt
 
 class somToMqtt(mongoToMqtt):
-    def __init__(self, var,  topic, collection_name, outlier_collection_name):
+    def __init__(self, topic, collection_name, outlier_collection_name):
         super().__init__(topic, collection_name, outlier_collection_name)
-        self.var = var
+        self.var = None
+        self.connectToMongoDB()
+        self.sendingLoop()
+
     def isOutlier(self, doc):
+        
+        if self.var is None:
+            setup = list(self.db['setup'].find())
+            self.var = setup[0].get('outliers_som') if setup else None
+            print(f"Variação para outliers de som: {self.var} DB")
+        
         sound_value = doc.get('Sound')
         if sound_value is not None:
             media = self.getJanelaAverage()
@@ -19,10 +28,7 @@ def main():
     topic = "pisid_2_som"
     collection_name = "sensor_ruido"
     outlier_collection_name = "outliers_DadosErrados_ruido"
-    var = 10  # Exemplo de variação para considerar um outlie
-    som_to_mqtt = somToMqtt(var, topic, collection_name, outlier_collection_name)
-    som_to_mqtt.connectToMongoDB()
-    som_to_mqtt.sendingLoop()
+    somToMqtt(topic, collection_name, outlier_collection_name)
 
 if __name__ == "__main__":
     main()

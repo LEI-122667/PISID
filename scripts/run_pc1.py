@@ -40,54 +40,46 @@ SCRIPTS = [
 
 # ─── Lançamento ──────────────────────────────────────────────────────────────
 
-def launch(title: str, script: str):
-    """Abre uma nova janela cmd com o titulo dado e corre o script Python."""
-    if not os.path.isfile(script):
-        print(f"[AVISO] Script nao encontrado, a saltar: {script}")
-        return
+def launch_organized():
+    print("=" * 60)
+    print("  PC1 Launcher - Organizado")
+    print("=" * 60)
 
-    # Usa CREATE_NEW_CONSOLE para abrir uma janela separada sem depender
-    # do comando 'start', que tem problemas com caminhos com espacos.
-    # 'title TITULO & python script.py' define o titulo e corre o scripts
-    # Passar como string evita problemas de "double-quoting" internos do Python no Windows.
-    
-    #Para windows
-    '''
-    cmd = f'cmd /k "set PYTHONIOENCODING=utf-8 & title {title} & "{PYTHON}" "{script}""'
-        subprocess.Popen(
-        cmd_str,
-        creationflags=subprocess.CREATE_NEW_CONSOLE,
-        cwd=os.path.dirname(script),
-    )
-    '''
-    #Windows FIM
+    for i, (title, script) in enumerate(SCRIPTS):
+        if not os.path.isfile(script):
+            continue
 
+        # --- Lógica de Posicionamento ---
+        
+        if "feedBack" in title:
+            # Janela Grande à Esquerda
+            # 80 colunas, 40 linhas, na posição (x=0, y=0)
+            geom = "80x40+0+0"
+        else:
+            # Scripts à Direita (em grelha)
+            # Calculamos a posição com base no índice (i-1 porque o feedback é o 0)
+            idx = i - 1
+            col = idx % 2      # Alterna entre coluna 0 e 1 à direita
+            row = idx // 2     # Muda de linha a cada 2 scripts
+            
+            # Largura 60, Altura 12
+            # X: começa depois da janela do feedback (aprox 700px)
+            # Y: desce conforme a linha
+            x_pos = 700 + (col * 550) 
+            y_pos = row * 350
+            geom = f"60x12+{x_pos}+{y_pos}"
 
+        cmd = [
+            "gnome-terminal", 
+            f"--geometry={geom}", 
+            "--title", title, 
+            "--", "bash", "-c", f"python3 '{script}'; exec bash"
+        ]
 
-    #Para Linux do sebas:) (PopOs)
-    #'''
-    cmd = [
-    "gnome-terminal", 
-    "--title", title, 
-    "--", "bash", "-c", f"python3 '{script}'; exec bash"
-    ]
-
-    subprocess.Popen(
-    cmd, 
-    cwd=os.path.dirname(script)
-    )
-    #'''
-    #LINUX FIM
-
-    print(f"[OK] Lancado: {title}")
-    time.sleep(0.5)  # pequena pausa para nao sobrepor janelas
-
+        subprocess.Popen(cmd, cwd=os.path.dirname(script))
+        print(f"[OK] {title} posicionado em {geom}")
+        time.sleep(0.3)
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("  PC1 Launcher - Mongo -> MQTT")
-    print("=" * 60)
-    for title, script in SCRIPTS:
-        launch(title, script)
-    print("\nTodos os scripts PC1 foram lançados.")
-    input("\nPrime Enter para fechar este launcher...\n")
+    launch_organized()
+    input("\nPrime Enter para fechar...")

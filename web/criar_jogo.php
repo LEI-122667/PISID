@@ -51,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 4. Execute python script para sincronizar Nuvem -> DB Local e Mongo
         $cmd = escapeshellcmd("python3 ../scripts/nuvemToDBs/htmlNuvemToDatabases.py " .
+        // CHamar novo script de .exe
             escapeshellarg($id_sim) . " " .
             escapeshellarg($out_temp) . " " .
             escapeshellarg($out_som) . " " .
