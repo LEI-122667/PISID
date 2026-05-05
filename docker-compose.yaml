@@ -109,6 +109,8 @@ services:
       - mongodb1
     environment:
       TZ: "Europe/Lisbon"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   mysql_data:
