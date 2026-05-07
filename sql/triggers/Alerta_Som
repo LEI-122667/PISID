@@ -1,34 +1,34 @@
 DELIMITER $$
 
-CREATE TRIGGER Alerta_Som 
+CREATE TRIGGER Alerta_Som
 AFTER INSERT ON Som
 FOR EACH ROW
 BEGIN
-    DECLARE v_IDSimulacao INT;
-    DECLARE v_Alerta INT DEFAULT 0;
-    DECLARE v_Limite DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_NormalNoise DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_NoiseTol DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_CorredoresAbertos INT DEFAULT 0;
+    DECLARE v_limite DECIMAL(6,2);
+    DECLARE v_alerta INT;
+    DECLARE v_corredores INT;
 
-    -- Procurar a simulação que o utilizador quer ver no dashboard (Ativa)
-    SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE ORDER BY IDSimulacao DESC LIMIT 1;
+    SELECT (sm.NormalNoise + sm.NoiseVarToleration - cj.alerta_som)
+    INTO v_limite
+    FROM Simulacao s
+    JOIN SetupMaze sm ON sm.IDSimulacao = s.IDSimulacao
+    JOIN ConfigJogo cj ON cj.IDSimulacao = s.IDSimulacao
+    WHERE s.Ativo = TRUE
+    ORDER BY s.IDSimulacao DESC
+    LIMIT 1;
 
-    IF v_IDSimulacao IS NOT NULL THEN
-        -- Buscar limites especificamente para os dados que acabaram de entrar (NEW)
-        SELECT COALESCE(alerta_som, 0) INTO v_Alerta FROM ConfigJogo WHERE IDSimulacao = NEW.IDSimulacao LIMIT 1;
-        SELECT COALESCE(NormalNoise, 0), COALESCE(NoiseVarToleration, 0) INTO v_NormalNoise, v_NoiseTol FROM SetupMaze WHERE IDSimulacao = NEW.IDSimulacao LIMIT 1;
+    SELECT COUNT(*) INTO v_corredores
+    FROM Corridor c
+    JOIN Simulacao s ON s.IDSimulacao = c.IDSimulacao
+    WHERE s.Ativo = TRUE AND c.Fechado = 0;
 
-        SET v_Limite = v_NormalNoise + v_NoiseTol;
-
-        -- Contar corredores abertos para a simulação ativa
-        SELECT COUNT(*) INTO v_CorredoresAbertos FROM Corridor WHERE IDSimulacao = v_IDSimulacao AND Fechado = 0;
-
-        -- Se o som estiver perto do limite E houver corredores para fechar
-        IF NEW.Som >= (v_Limite - v_Alerta) AND v_CorredoresAbertos > 0 THEN
-            INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-            VALUES (v_IDSimulacao, NOW(), 0, '2', NEW.Som, 'Som', 'Som perto do limite', NOW());
-        END IF;
+    IF v_limite IS NOT NULL AND NEW.Som >= v_limite AND v_corredores > 0 THEN
+        INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
+        SELECT s.IDSimulacao, NOW(), 0, '2', NEW.Som, 'Som', 'Som perto do limite', NOW()
+        FROM Simulacao s
+        WHERE s.Ativo = TRUE
+        ORDER BY s.IDSimulacao DESC
+        LIMIT 1;
     END IF;
 END$$
 

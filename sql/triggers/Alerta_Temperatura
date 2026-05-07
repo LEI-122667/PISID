@@ -2,43 +2,33 @@ DELIMITER $$
 
 CREATE TRIGGER Alerta_Temperatura
 AFTER INSERT ON Temperatura
-FOR EACH ROW 
+FOR EACH ROW
 BEGIN
-    DECLARE v_IDSimulacao INT;
-    DECLARE v_AlertaSuperior INT DEFAULT 0;
-    DECLARE v_AlertaInferior INT DEFAULT 0;
-    DECLARE v_LimiteSuperior DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_LimiteInferior DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_NormalTemp DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_TempHighTol DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_TempLowTol DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_Arcondicionado TINYINT DEFAULT 0;
+    DECLARE v_thresholdSuperior DECIMAL(6,2);
+    DECLARE v_thresholdInferior DECIMAL(6,2);
+    DECLARE v_arcondicionado TINYINT;
 
-    -- Procurar a simulação ativa
-    SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE ORDER BY IDSimulacao DESC LIMIT 1;
+    SELECT
+        (sm.NormalTemperature + sm.TemperatureVarHighToleration - cj.alerta_temperatura_high),
+        (sm.NormalTemperature - sm.TemperatureVarLowToleration + cj.alerta_temperatura_low),
+        s.ArCondicionado
+    INTO v_thresholdSuperior, v_thresholdInferior, v_arcondicionado
+    FROM Simulacao s
+    JOIN SetupMaze sm ON sm.IDSimulacao = s.IDSimulacao
+    JOIN ConfigJogo cj ON cj.IDSimulacao = s.IDSimulacao
+    WHERE s.Ativo = TRUE
+    ORDER BY s.IDSimulacao DESC
+    LIMIT 1;
 
-    IF v_IDSimulacao IS NOT NULL THEN
-        -- Buscar limites especificamente para os dados que acabaram de entrar (NEW)
-        SELECT COALESCE(alerta_temperatura_high, 0), COALESCE(alerta_temperatura_low, 0)
-        INTO v_AlertaSuperior, v_AlertaInferior
-        FROM ConfigJogo WHERE IDSimulacao = NEW.IDSimulacao LIMIT 1;
-
-        SELECT COALESCE(NormalTemperature, 0), COALESCE(TemperatureVarHighToleration, 0), COALESCE(TemperatureVarLowToleration, 0)
-        INTO v_NormalTemp, v_TempHighTol, v_TempLowTol
-        FROM SetupMaze WHERE IDSimulacao = NEW.IDSimulacao LIMIT 1;
-
-        SET v_LimiteSuperior = v_NormalTemp + v_TempHighTol;
-        SET v_LimiteInferior = v_NormalTemp - v_TempLowTol;
-
-        -- Verificar estado do AC na simulação ativa
-        SELECT COALESCE(ArCondicionado, 0) INTO v_Arcondicionado FROM Simulacao WHERE IDSimulacao = v_IDSimulacao LIMIT 1;
-
-        -- Lógica de alerta baseada no AC
-        IF (NEW.Temperatura >= (v_LimiteSuperior - v_AlertaSuperior) AND v_Arcondicionado = 0)
-           OR (NEW.Temperatura <= (v_LimiteInferior + v_AlertaInferior) AND v_Arcondicionado = 1) THEN
-
+    IF v_thresholdSuperior IS NOT NULL THEN
+        IF (NEW.Temperatura >= v_thresholdSuperior AND v_arcondicionado = 0)
+        OR (NEW.Temperatura <= v_thresholdInferior AND v_arcondicionado = 1) THEN
             INSERT INTO Mensagens (IDSimulacao, Hora, Sala, Sensor, Leitura, TipoAlerta, Msg, HoraEscrita)
-            VALUES (v_IDSimulacao, NOW(), 0, '1', NEW.Temperatura, 'Temperatura', 'Temperatura perto do limite', NOW());
+            SELECT s.IDSimulacao, NOW(), 0, '1', NEW.Temperatura, 'Temperatura', 'Temperatura perto do limite', NOW()
+            FROM Simulacao s
+            WHERE s.Ativo = TRUE
+            ORDER BY s.IDSimulacao DESC
+            LIMIT 1;
         END IF;
     END IF;
 END$$

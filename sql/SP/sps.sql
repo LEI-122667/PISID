@@ -496,6 +496,7 @@ BEGIN
     DECLARE v_CountMongo INT;
     DECLARE v_CorredorExiste INT DEFAULT 0;
     DECLARE v_CountDupMovimento INT DEFAULT 0;
+    DECLARE v_LastRoom INT DEFAULT NULL;
 
     -- 2. HANDLER PARA ERROS TÉCNICOS (Retorna 0)
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -523,10 +524,22 @@ BEGIN
                 -- Obter o número máximo de salas configurado para esta simulação
                 SELECT NumberRooms INTO v_MaxRooms FROM SetupMaze WHERE IDSimulacao = v_IDSimulacao LIMIT 1;
 
+                -- Obter a última sala onde o Marsami esteve (usando SalaDestino)
+                SELECT SalaDestino INTO v_LastRoom
+                FROM MedicoesPassagens
+                WHERE IDSimulacao = v_IDSimulacao AND Marsami = p_Marsami
+                ORDER BY MongoId DESC
+                LIMIT 1;
+
                 -- 5. VALIDAÇÃO DE REGRAS (Dado Inválido -1)
                 IF p_Marsami <= 0 OR p_Status NOT IN (0, 1, 2)
                    OR p_SalaOrigem < 0 OR p_SalaDestino < 0
                    OR p_SalaOrigem > v_MaxRooms OR p_SalaDestino > v_MaxRooms THEN
+                    SELECT -1 AS Result;
+
+                -- Validar continuidade de movimento: se não é a primeira entrada (SalaOrigem != 0),
+                -- a SalaOrigem deve ser a v_LastRoom
+                ELSEIF p_SalaOrigem != 0 AND (v_LastRoom IS NULL OR v_LastRoom != p_SalaOrigem) THEN
                     SELECT -1 AS Result;
 
                 -- Regra Status 0: Origem deve ser 0 (entrada no labirinto)
@@ -576,10 +589,30 @@ BEGIN
                             SELECT 1 AS Result;
                         END IF;
                     ELSE
-                        -- Saída normal (SalaDestino = 0) sem restrição de duplicado
-                        INSERT INTO MedicoesPassagens (IDSimulacao, Hora, SalaOrigem, SalaDestino, Marsami, Status, MongoId)
-                        VALUES (v_IDSimulacao, p_Hora, p_SalaOrigem, p_SalaDestino, p_Marsami, p_Status, p_MongoId);
-                        SELECT 1 AS Result;
+                        -- Saída normal (SalaDestino = 0)
+                        
+                        -- Verificar spam de finalização (SalaOrigem=0, SalaDestino=0)
+                        IF p_SalaOrigem = 0 AND p_SalaDestino = 0 THEN
+                            SELECT COUNT(*) INTO v_CountDupMovimento
+                            FROM MedicoesPassagens
+                            WHERE IDSimulacao = v_IDSimulacao
+                              AND Marsami = p_Marsami
+                              AND SalaOrigem = 0
+                              AND SalaDestino = 0;
+                            
+                            IF v_CountDupMovimento > 0 THEN
+                                SELECT -1 AS Result; -- Já existe, ignorar spam
+                            ELSE
+                                INSERT INTO MedicoesPassagens (IDSimulacao, Hora, SalaOrigem, SalaDestino, Marsami, Status, MongoId)
+                                VALUES (v_IDSimulacao, p_Hora, p_SalaOrigem, p_SalaDestino, p_Marsami, p_Status, p_MongoId);
+                                SELECT 1 AS Result;
+                            END IF;
+                        ELSE
+                            -- Saída normal de uma sala para fora (SalaDestino = 0)
+                            INSERT INTO MedicoesPassagens (IDSimulacao, Hora, SalaOrigem, SalaDestino, Marsami, Status, MongoId)
+                            VALUES (v_IDSimulacao, p_Hora, p_SalaOrigem, p_SalaDestino, p_Marsami, p_Status, p_MongoId);
+                            SELECT 1 AS Result;
+                        END IF;
                     END IF;
 
                 END IF;
