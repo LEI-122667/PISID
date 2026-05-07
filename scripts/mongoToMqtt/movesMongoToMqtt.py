@@ -5,6 +5,9 @@ class movesToMqtt(mongoToMqtt):
         super().__init__(topic, collection_name, outlier_collection_name)
         self.corredores_col = None
         self.n_marsamis_global = None
+        self.fetched = False
+        self.connectToMongoDB()
+        self.sendingLoop()
 
     def fetchInfoFromMongoDB(self):
         if self.db is None:
@@ -22,6 +25,10 @@ class movesToMqtt(mongoToMqtt):
             print("⚠️ [FETCH] Aviso: Documento de setup não encontrado.")
 
     def isOutlier(self, doc):
+        if not self.fetched:
+            print("⚠️ Aviso: Dados de configuração a carregados...")
+            self.fetchInfoFromMongoDB()
+            self.fetched = True
 
         roomOriginal = doc.get('RoomOrigin')
         roomDestino = doc.get('RoomDestiny')
@@ -68,10 +75,7 @@ def main():
     collection_name = "sensor_movimento"
     outlier_collection_name = "outliers_DadosErrados_movimentos"
     
-    bridge = movesToMqtt(topic, collection_name, outlier_collection_name)
-    bridge.connectToMongoDB()
-    bridge.fetchInfoFromMongoDB()
-    bridge.sendingLoop()
+    movesToMqtt(topic, collection_name, outlier_collection_name)
 
 if __name__ == "__main__":
     main()

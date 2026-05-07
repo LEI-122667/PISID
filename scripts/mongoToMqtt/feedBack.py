@@ -91,15 +91,16 @@ class FeedbackManager:
                         )
                         print(f"✅ [{tipo}] ID {id_inc}: Marcado como inserido.")
 
-                    elif payload['feedBack'] == -1:
+                    elif payload['feedBack'] in [-1, -3, -4]:
                         doc = colecao.find_one({"idIncremental": id_inc})
                         if doc:
                             self.db[outlier_coll_name].insert_one(doc)
                             colecao.delete_one({"idIncremental": id_inc})
-                            print(f"❌ [{tipo}] ID {id_inc}: Movido para Outliers.")
+                            print(f"❌ [{tipo}] ID {id_inc}: Doc movido. {payload.get('feedBack')}")
 
                     elif payload['feedBack'] == 0:
                         print(f"⚠️ [{tipo}] ID {id_inc}: Feedback neutro, nada a fazer.")
+                    
 
                     success = True # Sai do loop se tudo correu bem
 

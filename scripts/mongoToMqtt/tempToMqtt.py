@@ -1,10 +1,20 @@
 from mongoToMqtt import mongoToMqtt
 
 class tempToMqtt(mongoToMqtt):
-    def __init__(self, var,  topic, collection_name, outlier_collection_name):
+    def __init__(self,  topic, collection_name, outlier_collection_name):
         super().__init__(topic, collection_name, outlier_collection_name)
-        self.var = var
+        self.var = None
+        self.connectToMongoDB()
+        self.sendingLoop()
+
     def isOutlier(self, doc):
+
+        if self.var is None:
+            setup = list(self.db['setup'].find())
+            self.var = setup[0].get('outliers_temperatura') if setup else None
+            print(f"Variação para outliers de temperatura: {self.var} °C")
+        
+
         temperature_value = doc.get('Temperature')
         if temperature_value is not None:
             media = self.getJanelaAverage()
@@ -22,8 +32,7 @@ def main():
     topic = "pisid_2_temp"
     collection_name = "sensor_temperatura"
     outlier_collection_name = "outliers_DadosErrados_temperatura"
-    var = 5  # Exemplo de variação para considerar um outlie
-    temp_to_mqtt = tempToMqtt(var, topic, collection_name, outlier_collection_name)
+    temp_to_mqtt = tempToMqtt( topic, collection_name, outlier_collection_name)
     temp_to_mqtt.connectToMongoDB()
     temp_to_mqtt.sendingLoop()
 
