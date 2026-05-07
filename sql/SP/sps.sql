@@ -495,6 +495,7 @@ BEGIN
     DECLARE v_MaxRooms INT;
     DECLARE v_CountMongo INT;
     DECLARE v_CorredorExiste INT DEFAULT 0;
+    DECLARE v_CountDupMovimento INT DEFAULT 0;
 
     -- 2. HANDLER PARA ERROS TÉCNICOS (Retorna 0)
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -506,29 +507,23 @@ BEGIN
     IF p_MongoId IS NULL OR p_Marsami IS NULL OR p_Status IS NULL
        OR p_SalaOrigem IS NULL OR p_SalaDestino IS NULL THEN
         SELECT -1 AS Result;
-
     ELSE
-        -- Verificar duplicado na tabela MedicoesPassagens
+        -- Verificar duplicado na tabela MedicoesPassagens (mesmo MongoId)
         SELECT COUNT(*) INTO v_CountMongo FROM MedicoesPassagens WHERE MongoId = p_MongoId;
-
         IF v_CountMongo > 0 THEN
             SELECT -2 AS Result;
-
         ELSE
             -- 4. OBTER CONTEXTO DA SIMULAÇÃO
             SELECT IDSimulacao INTO v_IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1;
 
             -- Se não houver simulação ativa ou data futura
-            IF v_IDSimulacao IS NULL OR p_Hora > NOW() + INTERVAL 5 SECOND THEN
+            IF v_IDSimulacao IS NULL OR p_Hora > NOW() + INTERVAL 30 SECOND THEN
                 SELECT -1 AS Result;
-
             ELSE
                 -- Obter o número máximo de salas configurado para esta simulação
                 SELECT NumberRooms INTO v_MaxRooms FROM SetupMaze WHERE IDSimulacao = v_IDSimulacao LIMIT 1;
 
                 -- 5. VALIDAÇÃO DE REGRAS (Dado Inválido -1)
-
-                -- Regras básicas de valores positivos e existência de salas
                 IF p_Marsami <= 0 OR p_Status NOT IN (0, 1, 2)
                    OR p_SalaOrigem < 0 OR p_SalaDestino < 0
                    OR p_SalaOrigem > v_MaxRooms OR p_SalaDestino > v_MaxRooms THEN
@@ -544,6 +539,7 @@ BEGIN
 
                 -- Regra de Corredores (Movimentação entre salas internas)
                 ELSEIF p_SalaOrigem != 0 AND p_SalaDestino != 0 THEN
+
                     -- Verificar se existe corredor aberto entre as duas salas
                     SELECT COUNT(*) INTO v_CorredorExiste
                     FROM Corridor
@@ -555,17 +551,37 @@ BEGIN
                     IF v_CorredorExiste = 0 THEN
                         SELECT -1 AS Result; -- Corredor não existe ou está fechado
                     ELSE
-                        -- Inserção válida
+                        -- Inserção válida (movimento entre salas internas)
                         INSERT INTO MedicoesPassagens (IDSimulacao, Hora, SalaOrigem, SalaDestino, Marsami, Status, MongoId)
                         VALUES (v_IDSimulacao, p_Hora, p_SalaOrigem, p_SalaDestino, p_Marsami, p_Status, p_MongoId);
                         SELECT 1 AS Result;
                     END IF;
 
                 ELSE
-                    -- Se passou por todas as condições e é um movimento válido (ex: entrada ou saída)
-                    INSERT INTO MedicoesPassagens (IDSimulacao, Hora, SalaOrigem, SalaDestino, Marsami, Status, MongoId)
-                    VALUES (v_IDSimulacao, p_Hora, p_SalaOrigem, p_SalaDestino, p_Marsami, p_Status, p_MongoId);
-                    SELECT 1 AS Result;
+                    -- Movimentos de entrada/saída (SalaOrigem = 0 ou SalaDestino = 0)
+
+                    -- Verificar spawn duplicado (mesmo Marsami não pode entrar duas vezes)
+                    IF p_SalaOrigem = 0 AND p_SalaDestino != 0 THEN
+                        SELECT COUNT(*) INTO v_CountDupMovimento
+                        FROM MedicoesPassagens
+                        WHERE IDSimulacao = v_IDSimulacao
+                          AND Marsami = p_Marsami
+                          AND SalaOrigem = 0;
+
+                        IF v_CountDupMovimento > 0 THEN
+                            SELECT -1 AS Result;
+                        ELSE
+                            INSERT INTO MedicoesPassagens (IDSimulacao, Hora, SalaOrigem, SalaDestino, Marsami, Status, MongoId)
+                            VALUES (v_IDSimulacao, p_Hora, p_SalaOrigem, p_SalaDestino, p_Marsami, p_Status, p_MongoId);
+                            SELECT 1 AS Result;
+                        END IF;
+                    ELSE
+                        -- Saída normal (SalaDestino = 0) sem restrição de duplicado
+                        INSERT INTO MedicoesPassagens (IDSimulacao, Hora, SalaOrigem, SalaDestino, Marsami, Status, MongoId)
+                        VALUES (v_IDSimulacao, p_Hora, p_SalaOrigem, p_SalaDestino, p_Marsami, p_Status, p_MongoId);
+                        SELECT 1 AS Result;
+                    END IF;
+
                 END IF;
             END IF;
         END IF;
