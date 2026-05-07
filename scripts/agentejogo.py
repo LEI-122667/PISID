@@ -226,6 +226,7 @@ def run_agente():
                         
                         cursor.callproc("Fechar_Abrir_Corredor", (c_id, 1))
                         send_mqtt_action({"Type": "CloseDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
+                        time.sleep(0.1)
                     for _ in cursor.stored_results(): pass
                     conn.commit()
                 else:
@@ -238,7 +239,9 @@ def run_agente():
                 for i in range(amt_gatilhos):
                     # Chamamos a procedure 1 a 1 para disparar o trigger de pontuação múltiplas vezes
                     cursor.callproc("Ativar_Gatilho", (sala, 1))
+                    conn.commit()
                     send_mqtt_action({"Type": "Score", "Player": 2, "Room": sala})
+                    time.sleep(0.1)
                 
                 for _ in cursor.stored_results(): pass
                 conn.commit()
@@ -255,6 +258,7 @@ def run_agente():
                         
                         cursor.callproc("Fechar_Abrir_Corredor", (c_id, 0))
                         send_mqtt_action({"Type": "OpenDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
+                        time.sleep(0.1)
                     for _ in cursor.stored_results(): pass
                     conn.commit()
                 else:
