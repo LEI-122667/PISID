@@ -11,10 +11,23 @@ BEGIN
     DECLARE v_ativo BOOLEAN;
     SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
 
+    -- Only alert if simulation is active
     IF v_ativo = TRUE THEN
-        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 AND NEW.Gatilho > 0 THEN
-            INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
-            VALUES (NEW.IDSimulacao, NEW.Sala, 'Movimento', 'odd = even', '0', NOW(), NULL);
+        -- Check if the current state satisfies the alert condition (Odd = Even > 0 and Gatilho > 0)
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven 
+           AND NEW.NumeroMarsamisOdd > 0 
+           AND NEW.NumeroMarsamisEven > 0 
+           AND NEW.Gatilho > 0 THEN
+            
+            -- Prevent spamming: only alert if the previous state did NOT satisfy the condition
+            IF NOT (OLD.NumeroMarsamisOdd = OLD.NumeroMarsamisEven 
+                    AND OLD.NumeroMarsamisOdd > 0 
+                    AND OLD.NumeroMarsamisEven > 0 
+                    AND OLD.Gatilho > 0) THEN
+                
+                INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
+                VALUES (NEW.IDSimulacao, NEW.Sala, 'Movimento', 'odd = even', '0', NOW(), NULL);
+            END IF;
         END IF;
     END IF;
 END$$
@@ -27,7 +40,12 @@ BEGIN
     SELECT Ativo INTO v_ativo FROM Simulacao WHERE IDSimulacao = NEW.IDSimulacao;
 
     IF v_ativo = TRUE THEN
-        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven AND NEW.NumeroMarsamisOdd > 0 AND NEW.Gatilho > 0 THEN
+        -- For Insert, we just check the condition as there is no OLD state
+        IF NEW.NumeroMarsamisOdd = NEW.NumeroMarsamisEven 
+           AND NEW.NumeroMarsamisOdd > 0 
+           AND NEW.NumeroMarsamisEven > 0 
+           AND NEW.Gatilho > 0 THEN
+            
             INSERT INTO Mensagens (IDSimulacao, Sala, TipoAlerta, Msg, Sensor, Hora, Leitura)
             VALUES (NEW.IDSimulacao, NEW.Sala, 'Movimento', 'odd = even', '0', NOW(), NULL);
         END IF;

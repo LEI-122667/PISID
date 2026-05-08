@@ -4,274 +4,376 @@ import threading
 import json
 import paho.mqtt.client as mqtt
 import mysql.connector
-from mysql.connector import Error
 
+# ─────────────────────────────────────────────
+# CONFIGURAÇÕES
+# ─────────────────────────────────────────────
 LAST_ID_FILE = os.path.join(os.path.dirname(__file__), 'last_id.txt')
-
-def load_last_id():
-    if os.path.exists(LAST_ID_FILE):
-        try:
-            with open(LAST_ID_FILE, 'r') as f:
-                return int(f.read().strip())
-        except Exception:
-            pass
-    return 0
-
-def save_last_id(last_id):
-    try:
-        with open(LAST_ID_FILE, 'w') as f:
-            f.write(str(last_id))
-    except Exception as e:
-        print(f"Erro ao salvar last_id: {e}")
-
-db_config = {
-    'host': 'localhost',
-    'user': 'agente_user',
-    'password': 'agente',
-    'database': 'bd_pisid',
-    'autocommit': True
-}
-
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
-MQTT_TOPIC_ACT = "pisid_mazeact"
+MQTT_TOPIC = "pisid_mazeact"
+DEBUG = True
 
-# Lock global para garantir que alertas de som são processados sequencialmente
-som_lock = threading.Lock()
 
-mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-try:
-    mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    mqtt_client.loop_start()
-    print(f"✅ MQTT: Conectado ao Broker {MQTT_BROKER}")
-except Exception as e:
-    print(f"❌ Erro ao conectar ao MQTT: {e}")
+# ─────────────────────────────────────────────
+# SCHEMA DEFINITIONS
+# ─────────────────────────────────────────────
+MESSAGE_SCHEMAS = {
+    "Score": ["Type", "Player", "Room"],
+    "OpenDoor": ["Type", "Player", "RoomOrigin", "RoomDestiny"],
+    "CloseDoor": ["Type", "Player", "RoomOrigin", "RoomDestiny"],
+    "CloseAllDoor": ["Type", "Player"],
+    "OpenAllDoor": ["Type", "Player"],
+    "AcOn": ["Type", "Player"],
+    "AcOff": ["Type", "Player"]
+}
 
-def send_mqtt_action(payload):
-    try:
-        msg = json.dumps(payload)
-        mqtt_client.publish(MQTT_TOPIC_ACT, msg)
-        print(f"✉️ MQTT Enviado: {msg}")
-    except Exception as e:
-        print(f"❌ Erro MQTT: {e}")
 
-def get_connection():
-    return mysql.connector.connect(**db_config)
+class AgenteJogo:
+    def __init__(self):
+        self.db_config = {
+            'host': 'localhost',
+            'user': 'agente_user',
+            'password': 'agente',
+            'database': 'bd_pisid',
+            'autocommit': True
+        }
 
-def handle_som_alert(id_simulacao, config, setup):
-    with som_lock:
+        self.mqtt_connected = threading.Event()
+        self.som_lock = threading.Lock()
+        self.last_id = self.load_last_id()
+
         try:
-            conn = get_connection()
-            cursor = conn.cursor(dictionary=True)
-            
-            # Close all corridors
-            print("[Som] Fechar todos os corredores...")
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+        except:
+            self.client = mqtt.Client()
+
+        self.client.on_connect = self.on_connect
+        self.client.on_disconnect = self.on_disconnect
+
+    # ─────────────────────────────────────────────
+    # PERSISTÊNCIA
+    # ─────────────────────────────────────────────
+    def load_last_id(self):
+        if os.path.exists(LAST_ID_FILE):
+            try:
+                with open(LAST_ID_FILE, 'r') as f:
+                    return int(f.read().strip())
+            except:
+                pass
+        return 0
+
+    def save_last_id(self, last_id):
+        try:
+            with open(LAST_ID_FILE, 'w') as f:
+                f.write(str(last_id))
+        except Exception as e:
+            print(f"⚠️ Erro ao salvar last_id: {e}")
+
+    def get_db_connection(self):
+        return mysql.connector.connect(**self.db_config)
+
+    # ─────────────────────────────────────────────
+    # MQTT
+    # ─────────────────────────────────────────────
+    def on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
+            print(f"✅ MQTT ligado a {MQTT_BROKER}")
+            self.mqtt_connected.set()
+
+    def on_disconnect(self, client, userdata, rc):
+        print("⚠️ MQTT desconectado")
+        self.mqtt_connected.clear()
+
+    def format_payload_custom(self, payload):
+        t = payload["Type"]
+        p = payload["Player"]
+
+        if t == "Score":
+            return f"{{Type: Score, Player:{p}, Room: {payload['Room']}}}"
+
+        elif t == "OpenDoor":
+            return f"{{Type: OpenDoor, Player:{p}, RoomOrigin: {payload['RoomOrigin']}, RoomDestiny: {payload['RoomDestiny']}}}"
+
+        elif t == "CloseDoor":
+            return f"{{Type: CloseDoor, Player:{p}, RoomOrigin: {payload['RoomOrigin']}, RoomDestiny: {payload['RoomDestiny']}}}"
+
+        elif t == "CloseAllDoor":
+            return f"{{Type: CloseAllDoor, Player:{p}}}"
+
+        elif t == "OpenAllDoor":
+            return f"{{Type: OpenAllDoor, Player:{p}}}"
+
+        elif t == "AcOn":
+            return f"{{Type: AcOn, Player:{p}}}"
+
+        elif t == "AcOff":
+            return f"{{Type: AcOff, Player:{p}}}"
+
+        else:
+            raise ValueError(f"Tipo desconhecido: {t}")
+
+    # ─────────────────────────────────────────────
+    # VALIDATION + NORMALIZATION
+    # ─────────────────────────────────────────────
+    def validate_payload(self, payload):
+        msg_type = payload.get("Type")
+
+        if msg_type not in MESSAGE_SCHEMAS:
+            print(f"❌ Tipo inválido: {msg_type}")
+            return False
+
+        required = MESSAGE_SCHEMAS[msg_type]
+
+        # Missing fields
+        for field in required:
+            if field not in payload:
+                print(f"❌ Campo em falta ({msg_type}): {field}")
+                return False
+
+        # Extra fields (strict mode)
+        for field in payload.keys():
+            if field not in required:
+                print(f"⚠️ Campo extra ignorado: {field}")
+
+        return True
+
+    def normalize_payload(self, payload):
+        """Force correct types"""
+        payload["Type"] = str(payload["Type"])
+        payload["Player"] = int(payload["Player"])
+
+        if "Room" in payload:
+            payload["Room"] = int(payload["Room"])
+
+        if "RoomOrigin" in payload:
+            payload["RoomOrigin"] = int(payload["RoomOrigin"])
+
+        if "RoomDestiny" in payload:
+            payload["RoomDestiny"] = int(payload["RoomDestiny"])
+
+        return payload
+
+    def send_mqtt(self, payload):
+        if not self.mqtt_connected.is_set():
+            print("❌ MQTT sem ligação")
+            return False
+
+        payload = self.normalize_payload(payload)
+
+        if not self.validate_payload(payload):
+            print(f"❌ Payload inválido: {payload}")
+            return False
+
+        try:
+            msg = self.format_payload_custom(payload)
+        except Exception as e:
+            print(f"❌ Erro a formatar payload: {e}")
+            return False
+
+        print(f"📤 MQTT -> {msg}")
+
+        result = self.client.publish(MQTT_TOPIC, msg, qos=1)
+        return result.rc == mqtt.MQTT_ERR_SUCCESS
+
+    # ─────────────────────────────────────────────
+    # HANDLERS
+    # ─────────────────────────────────────────────
+    def handle_som(self, id_sim, config, setup):
+        with self.som_lock:
+            conn = None
+            try:
+                conn = self.get_db_connection()
+                cursor = conn.cursor(dictionary=True)
+
+                cursor.callproc("Fechar_Abrir_TodosCorredores", (1,))
+                self.send_mqtt({"Type": "CloseAllDoor", "Player": 2})
+
+                time.sleep(config['time_fecharcorredores'])
+
+                cursor.callproc("Fechar_Abrir_TodosCorredores", (0,))
+                self.send_mqtt({"Type": "OpenAllDoor", "Player": 2})
+
+            except Exception as e:
+                print(f"❌ Som: {e}")
+            finally:
+                if conn:
+                    conn.close()
+
+    def handle_temperatura(self, row, setup, cursor):
+        leitura = float(row.get('Leitura', 0))
+        normal = float(setup.get('NormalTemperature', 0))
+
+        if leitura > normal:
+            cursor.callproc("Desligar_Ligar_ArCondicionado", (1,))
+            self.send_mqtt({"Type": "AcOn", "Player": 2})
+        else:
+            cursor.callproc("Desligar_Ligar_ArCondicionado", (0,))
+            self.send_mqtt({"Type": "AcOff", "Player": 2})
+
+    def handle_movimento(self, row, config, id_sim, cursor):
+        sala = int(row['Sala'])
+        if sala == 0:
+            return
+
+        is_locked = self.som_lock.locked()
+
+        # ─────────────────────────────
+        # 1. CLOSE ALL DOORS
+        # ─────────────────────────────
+        if not is_locked:
+            print(f"🚪 [Movimento] Fechar todas as portas (Sala {sala})")
+
             cursor.callproc("Fechar_Abrir_TodosCorredores", (1,))
-            for _ in cursor.stored_results(): pass
-            conn.commit()
-            
-            send_mqtt_action({"Type": "CloseAllDoor", "Player": 2})
+            self.send_mqtt({
+                "Type": "CloseAllDoor",
+                "Player": 2
+            })
 
-            time_fechar = config['time_fecharcorredores']
-            ruido_limite = float(config['ruidolimite_fecharcorredores'])
+            # 🔴 IMPORTANT: wait for server to apply state
+            time.sleep(0.5)
 
-            if time_fechar > 0:
-                print(f"[Som] Aguardar {time_fechar} segundos antes de abrir...")
-                time.sleep(time_fechar)
-            elif ruido_limite > 0:
-                # Assuming fraction like 0.8
-                total_noise = float(setup['NormalNoise']) + float(setup['NoiseVarToleration'])
-                
-                if ruido_limite > 1.0:
-                    ruido_limite = ruido_limite / 100.0
-                    
-                threshold = total_noise * ruido_limite
-                print(f"[Som] Aguardar som descer até {threshold:.2f} (Limite: {ruido_limite*100}%)")
-                
-                while True:
-                    time.sleep(2)
-                    cursor.execute("SELECT Som FROM Som WHERE IDSimulacao = %s ORDER BY IDSom DESC LIMIT 1", (id_simulacao,))
-                    row = cursor.fetchone()
-                    if row:
-                        current_som = float(row['Som'])
-                        if current_som <= threshold:
-                            print(f"[Som] Som desceu para {current_som}. Abrir corredores.")
-                            break
-                    else:
-                        # No readings yet? Wait.
-                        pass
+        # ─────────────────────────────
+        # 2. TRIGGER SCORE (GATILHOS)
+        # ─────────────────────────────
+        amt = config.get('amount_of_gatilhos', 3)
 
-            print("[Som] Abrir todos os corredores...")
+        print(f"🎯 [Movimento] Ativar {amt} gatilhos na sala {sala}")
+
+        activated = 0
+        amt = config.get('amount_of_gatilhos', 3)
+
+        print(f"🎯 [Movimento] Tentar ativar até {amt} gatilhos na sala {sala}")
+
+        for _ in range(amt):
+            cursor.callproc("Ativar_Gatilho", (sala, 1))
+
+            result_value = None
+
+            # Read SP result
+            for res in cursor.stored_results():
+                row_result = res.fetchone()
+                if row_result and "Result" in row_result:
+                    result_value = int(row_result["Result"])
+
+            if result_value == 1:
+                # ✅ Only send if DB actually applied it
+                self.send_mqtt({
+                    "Type": "Score",
+                    "Player": 2,
+                    "Room": sala
+                })
+                activated += 1
+
+            elif result_value == -1:
+                print(f"⛔ [Movimento] Sem mais gatilhos disponíveis (parar)")
+                break
+
+            else:
+                print(f"⚠️ [Movimento] Erro ao ativar gatilho (Result={result_value})")
+                break
+
+            time.sleep(0.05)
+
+        print(f"✅ [Movimento] Gatilhos ativados: {activated}")
+
+        # 🔴 IMPORTANT: wait after scoring
+        time.sleep(0.7)
+
+        # ─────────────────────────────
+        # 3. OPEN ALL DOORS
+        # ─────────────────────────────
+        if not is_locked:
+            print(f"🚪 [Movimento] Reabrir todas as portas")
+
             cursor.callproc("Fechar_Abrir_TodosCorredores", (0,))
-            for _ in cursor.stored_results(): pass
-            conn.commit()
-            
-            send_mqtt_action({"Type": "OpenAllDoor", "Player": 2})
+            self.send_mqtt({
+                "Type": "OpenAllDoor",
+                "Player": 2
+            })
 
-        except Exception as e:
-            print(f"[Som Error] {e}")
-        finally:
-            if 'conn' in locals() and conn.is_connected():
-                conn.close()
+    # ─────────────────────────────────────────────
+    # LOOP
+    # ─────────────────────────────────────────────
+    def run(self):
+        print("🚀 Agente iniciado")
 
-def run_agente():
-    print("Iniciar Agente Jogo...")
-    last_id = load_last_id()
-    print(f"Retomando a partir do ID: {last_id}")
-    
-    while True:
-        try:
-            conn = get_connection()
-            cursor = conn.cursor(dictionary=True)
-            
-            # Use Ler_Alertas
-            cursor.callproc("Ler_Alertas", (last_id,))
-            result = []
-            for rs in cursor.stored_results():
-                for row_data in rs.fetchall():
-                    result.append(row_data)
-            
-            if not result:
-                # No messages found, sleep and retry
-                conn.close()
-                time.sleep(1)
-                continue
-                
-            row = result[0]
-            
-            # Check for error or no game
-            if 'Result' in row:
-                if row['Result'] == -1:
-                    print("⏳ Sem simulação ativa. A aguardar...")
-                    time.sleep(2)
-                    conn.close()
-                    continue
-                elif row['Result'] == 0:
-                    print("❌ Erro interno no Stored Procedure Ler_Alertas!")
-                    time.sleep(2)
-                    conn.close()
+        self.client.connect(MQTT_BROKER, MQTT_PORT)
+        self.client.loop_start()
+
+        while True:
+            conn = None
+            try:
+                if not self.mqtt_connected.wait(timeout=5):
                     continue
 
-            # We got a message
-            msg_id = row['ID']
-            last_id = msg_id
-            save_last_id(last_id)
-            
-            id_simulacao = row['IDSimulacao']
-            sensor = str(row['Sensor']).strip()
-            sala = row['Sala']
-            
-            print(f"[Alerta] ID: {msg_id} | Sensor: {sensor} | Sala: {sala}")
-            
-            # Fetch config for this simulation
-            cursor.execute("SELECT * FROM ConfigJogo WHERE IDSimulacao = %s LIMIT 1", (id_simulacao,))
-            config = cursor.fetchone()
-            
-            cursor.execute("SELECT * FROM SetupMaze WHERE IDSimulacao = %s LIMIT 1", (id_simulacao,))
-            setup = cursor.fetchone()
+                conn = self.get_db_connection()
+                cursor = conn.cursor(dictionary=True)
 
-            if not config or not setup:
-                print("[-] Erro: ConfigJogo ou SetupMaze não encontrados.")
-                conn.close()
-                continue
-                
-            if sensor == '2': # Som
-                t = threading.Thread(target=handle_som_alert, args=(id_simulacao, config, setup))
-                t.daemon = True
-                t.start()
-                
-            elif sensor == '1': # Temperatura
-                leitura = float(row.get('Leitura', 0))
-                normal_temp = float(setup.get('NormalTemperature', 0))
-                high_tol = float(setup.get('TemperatureVarHighToleration', 0))
-                low_tol = float(setup.get('TemperatureVarLowToleration', 0))
-                
-                high_limit = normal_temp + high_tol
-                low_limit = normal_temp - low_tol
-                
-                dist_high = abs(leitura - high_limit)
-                dist_low = abs(leitura - low_limit)
-                
-                if dist_high < dist_low:
-                    print(f"[Temperatura] Leitura ({leitura}) está mais próxima do limite superior ({high_limit}). Ligar Ar Condicionado...")
-                    cursor.callproc("Desligar_Ligar_ArCondicionado", (1,))
-                    send_mqtt_action({"Type": "AcOn", "Player": 2})
-                else:
-                    print(f"[Temperatura] Leitura ({leitura}) está mais próxima do limite inferior ({low_limit}). Desligar Ar Condicionado...")
-                    cursor.callproc("Desligar_Ligar_ArCondicionado", (0,))
-                    send_mqtt_action({"Type": "AcOff", "Player": 2})
-                for _ in cursor.stored_results(): pass
-                conn.commit()
-                
-            elif sensor == '0': # Movimento
-                if int(sala) == 0:
-                    print(f"🏁 [Info] Sensor 0 na Sala 0. A ignorar (Fim de Jogo/Entrada).")
-                    conn.close()
-                    time.sleep(0.5)
+                cursor.callproc("Ler_Alertas", (self.last_id,))
+                alertas = []
+
+                for res in cursor.stored_results():
+                    alertas.extend(res.fetchall())
+
+                if not alertas:
+                    time.sleep(1)
                     continue
 
-                # Verificar se o som_lock está ativo (corredores já fechados globalmente)
-                is_som_locked = som_lock.locked()
-                
-                if not is_som_locked:
-                    print(f"[Movimento] Fechar corredores da Sala {sala}...")
-                    cursor.execute("SELECT IDCorridor, RoomA, RoomB FROM Corridor WHERE (RoomA = %s OR RoomB = %s) AND IDSimulacao = %s", (sala, sala, id_simulacao))
-                    corredores = cursor.fetchall()
-                    
-                    # 1. Fechar as portas
-                    for c in corredores:
-                        c_id = c['IDCorridor']
-                        room_a = c['RoomA']
-                        room_b = c['RoomB']
-                        
-                        cursor.callproc("Fechar_Abrir_Corredor", (c_id, 1))
-                        send_mqtt_action({"Type": "CloseDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
-                        time.sleep(0.1)
-                    for _ in cursor.stored_results(): pass
-                    conn.commit()
-                else:
-                    print(f"[Movimento] som_lock ATIVO. Ignorar fecho de portas na Sala {sala}.")
+                row = alertas[0]
 
-                # 2. Ativar Gatilhos e enviar MQTT (Sempre acontece)
-                amt_gatilhos = config.get('amount_of_gatilhos', 3)
-                print(f"[Movimento] Ativar {amt_gatilhos} gatilhos na Sala {sala} (um de cada vez)...")
-                
-                for i in range(amt_gatilhos):
-                    # Chamamos a procedure 1 a 1 para disparar o trigger de pontuação múltiplas vezes
-                    cursor.callproc("Ativar_Gatilho", (sala, 1))
-                    conn.commit()
-                    send_mqtt_action({"Type": "Score", "Player": 2, "Room": sala})
-                    time.sleep(0.1)
-                
-                for _ in cursor.stored_results(): pass
-                conn.commit()
-                    
-                if not is_som_locked:
-                    time.sleep(1) # Aguarda um pouco para as portas não abrirem instantaneamente
-                    
-                    # 3. Abrir as portas novamente
-                    print(f"[Movimento] Abrir corredores da Sala {sala}...")
-                    for c in corredores:
-                        c_id = c['IDCorridor']
-                        room_a = c['RoomA']
-                        room_b = c['RoomB']
-                        
-                        cursor.callproc("Fechar_Abrir_Corredor", (c_id, 0))
-                        send_mqtt_action({"Type": "OpenDoor", "Player": 2, "RoomOrigin": room_a, "RoomDestiny": room_b})
-                        time.sleep(0.1)
-                    for _ in cursor.stored_results(): pass
-                    conn.commit()
-                else:
-                    print(f"[Movimento] som_lock ATIVO. Portas permanecem fechadas na Sala {sala}.")
-                
-        except Exception as e:
-            print(f"[Error in Main Loop] {e}")
-            time.sleep(2)
-        finally:
-            if 'conn' in locals() and conn.is_connected():
-                conn.close()
-        
-        time.sleep(0.5)
+                # Handle special SP responses first
+                if 'Result' in row:
+                    if row['Result'] == -1:
+                        time.sleep(2)
+                        continue
+                    if row['Result'] == 0:
+                        print("❌ SP Ler_Alertas erro")
+                        time.sleep(2)
+                        continue
+
+                # Ensure ID exists
+                if 'ID' not in row:
+                    print(f"⚠️ Alerta sem ID recebido: {row}")
+                    time.sleep(1)
+                    continue
+
+                # Safe to use
+                self.last_id = int(row['ID'])
+                self.save_last_id(self.last_id)
+
+                id_sim = row['IDSimulacao']
+                sensor = str(row['Sensor']).strip()
+
+                cursor.execute("SELECT * FROM ConfigJogo WHERE IDSimulacao=%s", (id_sim,))
+                config = cursor.fetchone()
+
+                cursor.execute("SELECT * FROM SetupMaze WHERE IDSimulacao=%s", (id_sim,))
+                setup = cursor.fetchone()
+
+                if not config or not setup:
+                    continue
+
+                if sensor == '2':
+                    threading.Thread(target=self.handle_som, args=(id_sim, config, setup), daemon=True).start()
+
+                elif sensor == '1':
+                    self.handle_temperatura(row, setup, cursor)
+
+                elif sensor == '0':
+                    self.handle_movimento(row, config, id_sim, cursor)
+
+            except Exception as e:
+                print(f"💥 Loop erro: {e}")
+                time.sleep(2)
+            finally:
+                if conn:
+                    conn.close()
+
 
 if __name__ == "__main__":
-    run_agente()
+    agente = AgenteJogo()
+    try:
+        agente.run()
+    except KeyboardInterrupt:
+        print("🛑 Encerrado")

@@ -35,7 +35,7 @@ def launch_mazerun(equipa):
         return
 
     mazerun_args = f'"{mazerun_exe}" {equipa} --flagMessage 1 --delay 1 --broker broker.hivemq.com --portbroker 1883'
-    cmd_str = f'cmd /c "title MazeRun - Equipa {equipa} & {mazerun_args}"'
+    cmd_str = f'cmd /k "title MazeRun - Equipa {equipa} & {mazerun_args}"'
 
     print(f"[OK] A lancar mazerun para equipa {equipa}...")
     subprocess.Popen(
