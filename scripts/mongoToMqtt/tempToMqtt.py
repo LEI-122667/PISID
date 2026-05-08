@@ -9,10 +9,9 @@ class tempToMqtt(mongoToMqtt):
 
     def isOutlier(self, doc):
 
-        if self.var is None:
-            setup = list(self.db['setup'].find())
-            self.var = setup[0].get('outliers_temperatura') if setup else None
-            print(f"Variação para outliers de temperatura: {self.var} °C")
+        setup = list(self.db['setup'].find())
+        self.var = setup[0].get('outliers_temperatura') if setup else None
+        print(f"Variação para outliers de temperatura: {self.var} °C")
         
 
         temperature_value = doc.get('Temperature')
