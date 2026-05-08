@@ -1,3 +1,5 @@
+from setuptools import setup
+
 from mongoToMqtt import mongoToMqtt
 
 class somToMqtt(mongoToMqtt):
@@ -9,10 +11,9 @@ class somToMqtt(mongoToMqtt):
 
     def isOutlier(self, doc):
         
-        if self.var is None:
-            setup = list(self.db['setup'].find())
-            self.var = setup[0].get('outliers_som') if setup else None
-            print(f"Variação para outliers de som: {self.var} DB")
+        setup = list(self.db['setup'].find())
+        self.var = setup[0].get('outliers_som') if setup else None
+        print(f"Variação para outliers de som: {self.var} DB")
         
         sound_value = doc.get('Sound')
         if sound_value is not None:

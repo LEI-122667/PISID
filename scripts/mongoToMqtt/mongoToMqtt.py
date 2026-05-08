@@ -140,6 +140,7 @@ class mongoToMqtt:
     def handleOutlier(self, doc):
         doc['motivo_outlier'] = self.motivo_outlier
         doc['data_filtro'] = datetime.now(timezone.utc)
+        print(f"⚠️ Outlier Detetado: ID: {doc.get('idIncremental')} - Motivo: {self.motivo_outlier}")
         self.outlier_collection.insert_one(doc)
         self.collection.delete_one({"_id": doc["_id"]})
     
