@@ -13,6 +13,7 @@ class mongoToMqtt:
         self.collection = None
         self.collection_name = collection_name
         self.outlier_collection_name = outlier_collection_name
+        self.SimID = None
         self.setMqtt(topic)
         if self.collection_name != 'sensor_movimento':
             self.janela = deque(maxlen=5)
@@ -144,6 +145,20 @@ class mongoToMqtt:
         self.outlier_collection.insert_one(doc)
         self.collection.delete_one({"_id": doc["_id"]})
     
+    def fetchInfoFromMongoDB(self):
+        if self.db is None:
+            print("⚠️ [FETCH] Erro: Falha ao carregar setup. Base de dados não inicializada.")
+            return
+
+        self.corredores_col = self.db["corredores"]
+        setup_collection = self.db["setup"]
+        self.setup_doc = setup_collection.find_one()
+        
+        if self.setup_doc:
+            print(f"✅ [FETCH] Setup , id da simulação: {self.setup_doc.get('IDSimulacao')}")
+        else:
+            print("⚠️ [FETCH] Aviso: Documento de setup não encontrado.")
+
     def sendingLoop(self):  
         if self.db is None:
             print("⚠️ Erro: Conexão não estabelecida. Script terminado.")

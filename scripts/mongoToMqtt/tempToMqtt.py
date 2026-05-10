@@ -8,10 +8,23 @@ class tempToMqtt(mongoToMqtt):
         self.sendingLoop()
 
     def isOutlier(self, doc):
+        if not self.fetched:
+            print("⚠️ Aviso: Dados de configuração a carregados...")
+            self.fetchInfoFromMongoDB()
+            self.SimID = self.setup_doc.get('IDSimulacao')
+            self.fetched = True
+            self.var = self.setup_doc.get('outliers_temperatura')
+            print(f"✅ Configuração carregada. Variação para outliers de temperatura: {self.var} °C e ID da simulação: {self.SimID}")
 
-        setup = list(self.db['setup'].find())
-        self.var = setup[0].get('outliers_temperatura') if setup else None
-        print(f"Variação para outliers de temperatura: {self.var} °C")
+        if self.fetched:
+            new_setup_doc = self.db["setup"].find_one()
+            if new_setup_doc.get('IDSimulacao') != self.SimID:
+                print("⚠️ Detetada mudança no ID da simulação. A recarregar configuração...")
+                self.fetchInfoFromMongoDB()
+                self.SimID = self.setup_doc.get('IDSimulacao')
+                self.janela.clear()  # Limpa a janela para evitar comparações erradas com dados antigos
+                self.var = self.setup_doc.get('outliers_temperatura')
+                print(f"✅ Configuração atualizada. Nova variação para outliers de temperatura: {self.var} °C e ID da simulação: {self.SimID}")
         
 
         temperature_value = doc.get('Temperature')
