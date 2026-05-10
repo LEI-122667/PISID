@@ -32,11 +32,9 @@ if ($user_tipo !== 'Admin' && $simulacao['Equipa'] != $user_equipa) {
 }
 
 // Ownership check: 
-// 1. Admins can always edit.
-// 2. Creator (IDUtilizador) can edit.
-// 3. For legacy records where IDUtilizador is NULL, anyone from the same team can edit.
-$is_owner = ($user_tipo === 'Admin') || 
-            ($simulacao['IDUtilizador'] == $user_id) || 
+// 1. Creator (IDUtilizador) can edit.
+// 2. For legacy records where IDUtilizador is NULL, anyone from the same team can edit.
+$is_owner = ($simulacao['IDUtilizador'] == $user_id) || 
             ($simulacao['IDUtilizador'] === null && $simulacao['Equipa'] == $user_equipa);
 
 $readonly = !$is_owner;

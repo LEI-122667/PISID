@@ -5,7 +5,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 $tipo = $_SESSION['tipo'];
-$can_create = in_array($tipo, ['Admin', 'User']);
+$can_create = ($tipo === 'User');
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -24,6 +24,7 @@ $can_create = in_array($tipo, ['Admin', 'User']);
             <a href="alterar_utilizador.php">Perfil</a>
             <?php if ($tipo === 'Admin'): ?>
                 <a href="criar_utilizador.php">Criar Utilizador</a>
+                <a href="gerir_utilizadores.php">Gerir Utilizadores</a>
             <?php endif; ?>
             <?php if ($can_create): ?>
                 <a href="criar_jogo.php">Criar Jogo</a>
@@ -43,8 +44,11 @@ $can_create = in_array($tipo, ['Admin', 'User']);
                 <?php if ($tipo === 'Admin'): ?>
                 <div class="glass-panel" style="background: rgba(30,41,59,0.4)">
                     <h3>Gestão de Utilizadores</h3>
-                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">Crie novas contas para administradores, criadores ou leitores.</p>
-                    <a href="criar_utilizador.php" class="btn">Criar Utilizador</a>
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">Crie novas contas ou altere utilizadores existentes.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="criar_utilizador.php" class="btn">Criar</a>
+                        <a href="gerir_utilizadores.php" class="btn btn-secondary">Gerir</a>
+                    </div>
                 </div>
                 <?php endif; ?>
 

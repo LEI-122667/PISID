@@ -63,11 +63,9 @@ $simulacoes = $stmt->fetchAll();
                         <?php foreach ($simulacoes as $s): ?>
                         <?php 
                             // Condition to show "Alterar" button:
-                            // 1. Admin can always see it
-                            // 2. Creator (IDUtilizador) can see it
-                            // 3. For legacy records, anyone from the team can see it
-                            $can_edit = ($tipo === 'Admin') || 
-                                        ($s['IDUtilizador'] == $user_id) || 
+                            // 1. Creator (IDUtilizador) can see it
+                            // 2. For legacy records, anyone from the team can see it
+                            $can_edit = ($s['IDUtilizador'] == $user_id) || 
                                         ($s['IDUtilizador'] === null && $s['Equipa'] == $equipa_user);
                         ?>
                         <tr>

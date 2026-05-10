@@ -7,8 +7,6 @@ DROP TRIGGER IF EXISTS Inserir_Marsamis;
 DROP TRIGGER IF EXISTS Pontuacao_gatilho;
 DROP TRIGGER IF EXISTS Alerta_Odd_Even_Update;
 DROP TRIGGER IF EXISTS Alerta_Odd_Even_Insert;
-DROP TRIGGER IF EXISTS Finalizar_Simulacao_Temperatura;
-DROP TRIGGER IF EXISTS Finalizar_Simulacao_Som;
 DROP TRIGGER IF EXISTS Finalizar_Simulacao_Marsami;
 
 -- ─────────────────────────────────────────────

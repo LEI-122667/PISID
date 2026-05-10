@@ -33,7 +33,7 @@ BEGIN
     -- Get the calling user's team
     SELECT Equipa INTO v_EquipaUtilizador
     FROM Utilizador
-    WHERE Email = SUBSTRING_INDEX(USER(), '@', 1);
+    WHERE Email = REGEXP_REPLACE(USER(), '@[^@]+$', '');
 
     IF v_EquipaUtilizador IS NULL THEN
         SIGNAL SQLSTATE '45000'
@@ -73,7 +73,7 @@ BEGIN
     -- Get the ID of whoever is calling this SP based on their MySQL login email
     SELECT IDUtilizador INTO v_IDUtilizador
     FROM Utilizador
-    WHERE Email = SUBSTRING_INDEX(USER(), '@', 1);
+    WHERE Email = REGEXP_REPLACE(USER(), '@[^@]+$', '');
 
     -- Check the calling user was found in the table
     IF v_IDUtilizador IS NULL THEN

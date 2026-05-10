@@ -42,7 +42,7 @@ BEGIN
                 SELECT -1 AS Result; -- Erro: Nenhuma simulação ativa
             ELSEIF p_Som < 0 THEN
                 SELECT -3 AS Result; -- Erro: Valor negativo
-            ELSEIF p_Hora > NOW() + INTERVAL 5 MINUTE THEN
+            ELSEIF p_Hora > NOW() + INTERVAL 30 SECOND THEN
                 SELECT -4 AS Result; -- Erro: Data no futuro (mais de 5 min)
             ELSE
                 -- Tentativa de Inserção

@@ -2,8 +2,8 @@
 session_start();
 require_once 'db.php';
 
-// Only Admin and User types can create games
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['tipo'], ['Admin', 'User'])) {
+// Only User types can create games (Admin can manage users but not create games)
+if (!isset($_SESSION['user_id']) || $_SESSION['tipo'] !== 'User') {
     header('Location: dashboard.php');
     exit;
 }

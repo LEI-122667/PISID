@@ -42,7 +42,7 @@ BEGIN
             -- Validações:
             IF v_IDSimulacao IS NULL THEN
                 SELECT -1 AS Result; -- Erro: Nenhuma simulação ativa
-            ELSEIF p_Hora > NOW() + INTERVAL 5 MINUTE THEN
+            ELSEIF p_Hora > NOW() + INTERVAL 30 SECOND THEN
                 SELECT -4 AS Result; -- Erro: Data no futuro (mais de 5 min)
             ELSE
                 -- Tentativa de Inserção
