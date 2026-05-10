@@ -50,6 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (isset($error)): ?>
                 <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert alert-success"><?= htmlspecialchars($_GET['success']) ?></div>
+            <?php endif; ?>
             <form method="POST">
                 <div class="form-group">
                     <label>Email do Utilizador</label>

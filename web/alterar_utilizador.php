@@ -126,6 +126,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <button type="submit" class="btn">Atualizar Dados</button>
             </form>
+
+            <?php if (!$is_admin_editing_others): ?>
+                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Zona de Perigo: Esta
+                        ação é permanente.</p>
+                    <a href="remover_utilizador.php?id=<?= $target_user_id ?>" class="btn btn-secondary"
+                        style="background: #ff4757; width: auto;"
+                        onclick="return (confirm('Tem a CERTEZA que deseja eliminar a sua conta permanentemente?') && confirm('Esta ação não pode ser desfeita. Deseja mesmo continuar?'))">
+                        Eliminar Minha Conta
+                    </a>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </body>
