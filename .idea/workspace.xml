@@ -4,98 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Fixes na BD/Alertas Funcionais">
+    <list default="true" id="a6baea75-ea02-47e4-9257-a4d66a5c7e07" name="Changes" comment="Web fixes com Alterar Utilizador e ecrãs admin">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/agentejogo.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/agentejogo.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/atuadores.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/atuadores.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/last_id.txt" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/last_id.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/last_id_sensor_movimento.txt" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/last_id_sensor_movimento.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/last_id_sensor_ruido.txt" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/last_id_sensor_ruido.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/last_id_sensor_temperatura.txt" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/last_id_sensor_temperatura.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/local_launcher_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/local_launcher_server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/MSVCP140.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/VCRUNTIME140.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/VCRUNTIME140_1.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_asyncio.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_bz2.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_cffi_backend.cp310-win_amd64.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_ctypes.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_decimal.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_hashlib.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_lzma.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_multiprocessing.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_mysql_connector.cp310-win_amd64.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_overlapped.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_queue.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_socket.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_ssl.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/_uuid.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-console-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-datetime-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-debug-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-errorhandling-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-file-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-file-l1-2-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-file-l2-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-handle-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-heap-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-interlocked-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-libraryloader-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-localization-l1-2-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-memory-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-namedpipe-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-processenvironment-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-processthreads-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-processthreads-l1-1-1.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-profile-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-rtlsupport-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-string-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-synch-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-synch-l1-2-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-sysinfo-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-timezone-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-core-util-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-conio-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-convert-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-environment-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-filesystem-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-heap-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-locale-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-math-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-process-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-runtime-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-stdio-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-string-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-time-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/api-ms-win-crt-utility-l1-1-0.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/base_library.zip" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/INSTALLER" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/LICENSE.APACHE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/LICENSE.BSD" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/METADATA" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/RECORD" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/REQUESTED" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/WHEEL" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography-41.0.7.dist-info/top_level.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/cryptography/hazmat/bindings/_rust.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/libcrypto-1_1-x64.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/libcrypto-1_1.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/libffi-7.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/libmysql.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/libssl-1_1-x64.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/libssl-1_1.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/pyexpat.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/python3.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/python310.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/select.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/ucrtbase.dll" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/_internal/unicodedata.pyd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/mazerun/mazerun.exe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/agentejogo2.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/nuvemToDBs/htmlNuvemToDatabasesWithMongoReplicas.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/nuvemToDBs/htmlNuvemToDatabasesWithMongoReplicas.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/run_pc1.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_pc1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sql/triggers/Alerta_Odd_Even" beforeDir="false" afterPath="$PROJECT_DIR$/sql/triggers/Alerta_Odd_Even" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sql/triggers/triggers.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/triggers/triggers.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/alterar_utilizador.php" beforeDir="false" afterPath="$PROJECT_DIR$/web/alterar_utilizador.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/web/index.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -146,52 +61,52 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Docker.docker-compose.yaml: Compose Deployment.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.ac_tester.executor": "Run",
-    "Python.agentejogo.executor": "Run",
-    "Python.htmlNuvemToDatabases.executor": "Run",
-    "Python.local_launcher_server.executor": "Run",
-    "Python.mongoToMqtt.executor": "Run",
-    "Python.movesMongoToMqtt.executor": "Run",
-    "Python.movesSimToMongo.executor": "Run",
-    "Python.movimentoMqqtToMySql.executor": "Run",
-    "Python.mqq_listener.executor": "Run",
-    "Python.mqq_sender.executor": "Run",
-    "Python.mqq_tester.executor": "Run",
-    "Python.nuvemDbToMongo.executor": "Run",
-    "Python.nuvemToMySql.executor": "Run",
-    "Python.run_pc1.executor": "Run",
-    "Python.run_pc2.executor": "Run",
-    "Python.simToMongoDB.executor": "Run",
-    "Python.somMqqtToMySql.executor": "Run",
-    "Python.somSimToMongo.executor": "Run",
-    "Python.somToMqtt.executor": "Run",
-    "Python.tempSimToMongo.executor": "Run",
-    "Python.temperaturaMqqtToMySql.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/ppava/PycharmProjects/PISID/scripts/mazerun",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Docker.docker-compose.yaml: Compose Deployment.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.ac_tester.executor&quot;: &quot;Run&quot;,
+    &quot;Python.agentejogo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.htmlNuvemToDatabases.executor&quot;: &quot;Run&quot;,
+    &quot;Python.local_launcher_server.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mongoToMqtt.executor&quot;: &quot;Run&quot;,
+    &quot;Python.movesMongoToMqtt.executor&quot;: &quot;Run&quot;,
+    &quot;Python.movesSimToMongo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.movimentoMqqtToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mqq_listener.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mqq_sender.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mqq_tester.executor&quot;: &quot;Run&quot;,
+    &quot;Python.nuvemDbToMongo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.nuvemToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_pc1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_pc2.executor&quot;: &quot;Run&quot;,
+    &quot;Python.simToMongoDB.executor&quot;: &quot;Run&quot;,
+    &quot;Python.somMqqtToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;Python.somSimToMongo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.somToMqtt.executor&quot;: &quot;Run&quot;,
+    &quot;Python.tempSimToMongo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.temperaturaMqqtToMySql.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ppava/PycharmProjects/PISID/scripts/mazerun&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\ppava\PycharmProjects\PISID\scripts\mazerun" />
@@ -205,7 +120,7 @@
       <recent name="$PROJECT_DIR$/scripts/mqttToMySql" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.movimentoMqqtToMySql">
     <configuration name="agentejogo" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PISID" />
       <option name="ENV_FILES" value="" />
@@ -305,7 +220,8 @@
       <workItem from="1778187754877" duration="1624000" />
       <workItem from="1778241879323" duration="21000" />
       <workItem from="1778247967830" duration="4081000" />
-      <workItem from="1778255799423" duration="7006000" />
+      <workItem from="1778255799423" duration="7139000" />
+      <workItem from="1778411035300" duration="1521000" />
     </task>
     <task id="LOCAL-00001" summary="Atuadores.py basico criado&#10;(Monitoriza os valores que acabaram de chegar ao MySQL)&#10;Lógica Básica de temperatura e odd/even">
       <option name="closed" value="true" />
@@ -443,7 +359,23 @@
       <option name="project" value="LOCAL" />
       <updated>1778177188095</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Novo mazerun.exe e bug fixes, alertas e agentejogo">
+      <option name="closed" value="true" />
+      <created>1778268286852</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1778268286852</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Web fixes com Alterar Utilizador e ecrãs admin">
+      <option name="closed" value="true" />
+      <created>1778411896412</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1778411896412</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -473,7 +405,9 @@
     <MESSAGE value="Sps corrigir os nomes dos alertas" />
     <MESSAGE value="Inserir movimentos agora verifica duplicação de mensagens com SalaOrigem = 0" />
     <MESSAGE value="Fixes na BD/Alertas Funcionais" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixes na BD/Alertas Funcionais" />
+    <MESSAGE value="Novo mazerun.exe e bug fixes, alertas e agentejogo" />
+    <MESSAGE value="Web fixes com Alterar Utilizador e ecrãs admin" />
+    <option name="LAST_COMMIT_MESSAGE" value="Web fixes com Alterar Utilizador e ecrãs admin" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
