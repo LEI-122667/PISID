@@ -218,32 +218,38 @@ class AgenteJogo:
 
         is_locked = self.som_lock.locked()
 
+        # Obter os corredores ligados à sala
+        corredores_da_sala = []
+        if not is_locked:
+            cursor.execute("SELECT IDCorridor, RoomA, RoomB FROM Corridor WHERE IDSimulacao = %s AND (RoomA = %s OR RoomB = %s)", (id_sim, sala, sala))
+            corredores_da_sala = cursor.fetchall()
+
         # ─────────────────────────────
-        # 1. CLOSE ALL DOORS
+        # 1. CLOSE PORTAS DA SALA
         # ─────────────────────────────
         if not is_locked:
-            print(f"🚪 [Movimento] Fechar todas as portas (Sala {sala})")
-
-            cursor.callproc("Fechar_Abrir_TodosCorredores", (1,))
-            self.send_mqtt({
-                "Type": "CloseAllDoor",
-                "Player": 2
-            })
+            print(f"🚪 [Movimento] Fechar portas ligadas à sala {sala}")
+            for c in corredores_da_sala:
+                cursor.callproc("Fechar_Abrir_Corredor", (c['IDCorridor'], 1))
+                self.send_mqtt({
+                    "Type": "CloseDoor",
+                    "Player": 2,
+                    "RoomOrigin": c['RoomA'],
+                    "RoomDestiny": c['RoomB']
+                })
 
             # 🔴 IMPORTANT: wait for server to apply state
-            time.sleep(0.5)
+            if corredores_da_sala:
+                time.sleep(0.5)
 
         # ─────────────────────────────
         # 2. TRIGGER SCORE (GATILHOS)
         # ─────────────────────────────
         amt = config.get('amount_of_gatilhos', 3)
 
-        print(f"🎯 [Movimento] Ativar {amt} gatilhos na sala {sala}")
+        print(f"🎯 [Movimento] Tentar ativar até {amt} gatilhos na sala {sala}")
 
         activated = 0
-        amt = config.get('amount_of_gatilhos', 3)
-
-        print(f"🎯 [Movimento] Tentar ativar até {amt} gatilhos na sala {sala}")
 
         for _ in range(amt):
             cursor.callproc("Ativar_Gatilho", (sala, 1))
@@ -278,19 +284,22 @@ class AgenteJogo:
         print(f"✅ [Movimento] Gatilhos ativados: {activated}")
 
         # 🔴 IMPORTANT: wait after scoring
-        time.sleep(0.7)
+        if activated > 0 or not is_locked:
+            time.sleep(0.7)
 
         # ─────────────────────────────
-        # 3. OPEN ALL DOORS
+        # 3. OPEN PORTAS DA SALA
         # ─────────────────────────────
         if not is_locked:
-            print(f"🚪 [Movimento] Reabrir todas as portas")
-
-            cursor.callproc("Fechar_Abrir_TodosCorredores", (0,))
-            self.send_mqtt({
-                "Type": "OpenAllDoor",
-                "Player": 2
-            })
+            print(f"🚪 [Movimento] Reabrir portas ligadas à sala {sala}")
+            for c in corredores_da_sala:
+                cursor.callproc("Fechar_Abrir_Corredor", (c['IDCorridor'], 0))
+                self.send_mqtt({
+                    "Type": "OpenDoor",
+                    "Player": 2,
+                    "RoomOrigin": c['RoomA'],
+                    "RoomDestiny": c['RoomB']
+                })
 
     # ─────────────────────────────────────────────
     # LOOP
