@@ -14,6 +14,7 @@ class mongoToMqtt:
         self.collection_name = collection_name
         self.outlier_collection_name = outlier_collection_name
         self.SimID = None
+        self.fetched = False
         self.setMqtt(topic)
         if self.collection_name != 'sensor_movimento':
             self.janela = deque(maxlen=5)

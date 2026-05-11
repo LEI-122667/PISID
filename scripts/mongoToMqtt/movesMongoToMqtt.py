@@ -5,7 +5,6 @@ class movesToMqtt(mongoToMqtt):
         super().__init__(topic, collection_name, outlier_collection_name)
         self.corredores_col = None
         self.n_marsamis_global = None
-        self.fetched = False
         self.connectToMongoDB()
         self.sendingLoop()
 
