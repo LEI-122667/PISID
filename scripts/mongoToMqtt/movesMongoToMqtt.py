@@ -9,26 +9,21 @@ class movesToMqtt(mongoToMqtt):
         self.connectToMongoDB()
         self.sendingLoop()
 
-    def fetchInfoFromMongoDB(self):
-        if self.db is None:
-            print("⚠️ [FETCH] Erro: Falha ao carregar setup. Base de dados não inicializada.")
-            return
-
-        self.corredores_col = self.db["corredores"]
-        setup_collection = self.db["setup"]
-        setup_doc = setup_collection.find_one()
-        
-        if setup_doc:
-            self.n_marsamis_global = setup_doc.get('numbermarsamis')
-            print(f"✅ [FETCH] Setup carregado: Total de Marsamis = {self.n_marsamis_global}")
-        else:
-            print("⚠️ [FETCH] Aviso: Documento de setup não encontrado.")
-
     def isOutlier(self, doc):
         if not self.fetched:
             print("⚠️ Aviso: Dados de configuração a carregados...")
             self.fetchInfoFromMongoDB()
+            self.SimID = self.setup_doc.get('IDSimulacao')
+            self.n_marsamis_global = self.setup_doc.get('numbermarsamis')
             self.fetched = True
+
+        if self.fetched:
+            new_setup_doc = self.db["setup"].find_one()
+            if new_setup_doc.get('IDSimulacao') != self.SimID:
+                print("⚠️ Detetada mudança no ID da simulação. A recarregar configuração...")
+                self.fetchInfoFromMongoDB()
+                self.SimID = self.setup_doc.get('IDSimulacao')
+                self.n_marsamis_global = self.setup_doc.get('numbermarsamis')
 
         roomOriginal = doc.get('RoomOrigin')
         roomDestino = doc.get('RoomDestiny')
