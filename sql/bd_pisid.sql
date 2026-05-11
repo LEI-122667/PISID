@@ -154,6 +154,7 @@ CREATE TABLE ConfigJogo (
     time_fecharcorredores        INT            NOT NULL COMMENT 'Seconds until a closed corridor reopens',
     ruidolimite_fecharcorredores DECIMAL(5,2)   NOT NULL COMMENT 'Fraction (%) of the total sound limit that triggers corridor closure',
     amount_of_gatilhos           INT            NOT NULL COMMENT 'Amount of shots to corridor for movement alert',
+    modo_fecho_portas            INT            NOT NULL DEFAULT 0 COMMENT '0: Fechar portas da sala (Odd=Even), 1: Fechar todas as portas',
     CONSTRAINT fk_configjogo_simulacao
         FOREIGN KEY (IDSimulacao) REFERENCES Simulacao(IDSimulacao)
         ON UPDATE CASCADE ON DELETE CASCADE

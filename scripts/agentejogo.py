@@ -189,7 +189,29 @@ class AgenteJogo:
                 cursor.callproc("Fechar_Abrir_TodosCorredores", (1,))
                 self.send_mqtt({"Type": "CloseAllDoor", "Player": 2})
 
-                time.sleep(config['time_fecharcorredores'])
+                limite_percentagem = float(config.get('ruidolimite_fecharcorredores', 0))
+                tempo_espera = int(config.get('time_fecharcorredores', 0))
+
+                if limite_percentagem > 0:
+                    normal = float(setup.get('NormalNoise', 0))
+                    toleration = float(setup.get('NoiseVarToleration', 0))
+                    total_limit = normal + toleration
+                    target_sound = total_limit * (limite_percentagem / 100.0)
+                    
+                    print(f"🔊 [Som] A aguardar que o som baixe de {target_sound:.2f} (Total={total_limit}, Limite={limite_percentagem}%)")
+                    
+                    while True:
+                        cursor.execute("SELECT Som FROM Som WHERE IDSimulacao = %s ORDER BY IDSom DESC LIMIT 1", (id_sim,))
+                        row = cursor.fetchone()
+                        if row and row['Som'] is not None:
+                            current_sound = float(row['Som'])
+                            if current_sound < target_sound:
+                                print(f"🔊 [Som] Som atual ({current_sound}) baixou do limite ({target_sound}). A reabrir portas.")
+                                break
+                        time.sleep(1)
+                else:
+                    print(f"🔊 [Som] A aguardar {tempo_espera}s (modo tempo)")
+                    time.sleep(tempo_espera)
 
                 cursor.callproc("Fechar_Abrir_TodosCorredores", (0,))
                 self.send_mqtt({"Type": "OpenAllDoor", "Player": 2})
@@ -227,19 +249,26 @@ class AgenteJogo:
         # ─────────────────────────────
         # 1. CLOSE PORTAS DA SALA
         # ─────────────────────────────
+        modo_fecho = int(config.get('modo_fecho_portas', 0))
+
         if not is_locked:
-            print(f"🚪 [Movimento] Fechar portas ligadas à sala {sala}")
-            for c in corredores_da_sala:
-                cursor.callproc("Fechar_Abrir_Corredor", (c['IDCorridor'], 1))
-                self.send_mqtt({
-                    "Type": "CloseDoor",
-                    "Player": 2,
-                    "RoomOrigin": c['RoomA'],
-                    "RoomDestiny": c['RoomB']
-                })
+            if modo_fecho == 1:
+                print(f"🚪 [Movimento] Fechar TODOS os corredores (Odd=Even)")
+                cursor.callproc("Fechar_Abrir_TodosCorredores", (1,))
+                self.send_mqtt({"Type": "CloseAllDoor", "Player": 2})
+            else:
+                print(f"🚪 [Movimento] Fechar portas ligadas à sala {sala}")
+                for c in corredores_da_sala:
+                    cursor.callproc("Fechar_Abrir_Corredor", (c['IDCorridor'], 1))
+                    self.send_mqtt({
+                        "Type": "CloseDoor",
+                        "Player": 2,
+                        "RoomOrigin": c['RoomA'],
+                        "RoomDestiny": c['RoomB']
+                    })
 
             # 🔴 IMPORTANT: wait for server to apply state
-            if corredores_da_sala:
+            if modo_fecho == 1 or corredores_da_sala:
                 time.sleep(0.5)
 
         # ─────────────────────────────
@@ -291,15 +320,23 @@ class AgenteJogo:
         # 3. OPEN PORTAS DA SALA
         # ─────────────────────────────
         if not is_locked:
-            print(f"🚪 [Movimento] Reabrir portas ligadas à sala {sala}")
-            for c in corredores_da_sala:
-                cursor.callproc("Fechar_Abrir_Corredor", (c['IDCorridor'], 0))
-                self.send_mqtt({
-                    "Type": "OpenDoor",
-                    "Player": 2,
-                    "RoomOrigin": c['RoomA'],
-                    "RoomDestiny": c['RoomB']
-                })
+            if self.som_lock.locked():
+                print(f"🚪 [Movimento] Abertura de portas cancelada (Alerta de Som em curso tem prioridade)")
+            else:
+                if modo_fecho == 1:
+                    print(f"🚪 [Movimento] Reabrir TODOS os corredores")
+                    cursor.callproc("Fechar_Abrir_TodosCorredores", (0,))
+                    self.send_mqtt({"Type": "OpenAllDoor", "Player": 2})
+                else:
+                    print(f"🚪 [Movimento] Reabrir portas ligadas à sala {sala}")
+                    for c in corredores_da_sala:
+                        cursor.callproc("Fechar_Abrir_Corredor", (c['IDCorridor'], 0))
+                        self.send_mqtt({
+                            "Type": "OpenDoor",
+                            "Player": 2,
+                            "RoomOrigin": c['RoomA'],
+                            "RoomDestiny": c['RoomB']
+                        })
 
     # ─────────────────────────────────────────────
     # LOOP

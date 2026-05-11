@@ -41,6 +41,8 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $r_limite = $_POST['fechar_valor'];
     }
 
+    $modo_fecho = $_POST['modo_fecho'] ?? 0;
+
     try {
         $pdo->beginTransaction();
 
@@ -69,7 +71,8 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             escapeshellarg($al_som) . " " .
             escapeshellarg($t_fechar) . " " .
             escapeshellarg($r_limite) . " " .
-            escapeshellarg($amt_gatilhos));
+            escapeshellarg($amt_gatilhos) . " " .
+            escapeshellarg($modo_fecho));
 
         $output = shell_exec("$cmd 2>&1") ?? '(sem output)';
 
@@ -171,6 +174,13 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="form-group">
                                 <label>Quantidade de Gatilhos (Movimento)</label>
                                 <input type="number" name="amt_gatilhos" required value="3">
+                            </div>
+                            <div class="form-group">
+                                <label>Modo de Fecho (Movimento Odd=Even)</label>
+                                <select name="modo_fecho" required style="margin-bottom: 10px;">
+                                    <option value="0">Fechar apenas corredores da sala</option>
+                                    <option value="1">Fechar todos os corredores</option>
+                                </select>
                             </div>
                         </div>
                     </div>
