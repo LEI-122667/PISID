@@ -77,7 +77,7 @@ public class MazeSoundFragment extends Fragment {
             @Override
             public void run() {
                 fetchSoundData();
-                handler.postDelayed(this, 5000); // 5 segundos
+                handler.postDelayed(this, 1000); // 1 segundo
             }
         };
 

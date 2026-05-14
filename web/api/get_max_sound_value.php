@@ -29,7 +29,7 @@ $sql = "SELECT
     cj.alerta_som AS offset
 FROM SetupMaze sm
 JOIN ConfigJogo cj ON sm.IDSimulacao = cj.IDSimulacao
-WHERE sm.IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1)
+WHERE sm.IDSimulacao = (SELECT IDSimulacao FROM Simulacao ORDER BY Ativo DESC, IDSimulacao DESC LIMIT 1)
 LIMIT 1
 ";
 

@@ -80,7 +80,7 @@ public class MazeTemperatureFragment extends Fragment {
             @Override
             public void run() {
                 fetchTemperatureData();
-                handler.postDelayed(this, 5000); // Atualiza de 5 em 5 segundos
+                handler.postDelayed(this, 1000); // Atualiza de 1 em 1 segundo
             }
         };
 

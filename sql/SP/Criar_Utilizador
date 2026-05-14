@@ -23,6 +23,13 @@ BEGIN
     IF p_Email IS NULL OR TRIM(p_Email) = '' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email é obrigatório';
+
+    -- Validação de formato de Email
+    IF p_Email NOT REGEXP '^[A-Za-z0-9._%\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Formato de email inválido';
+    END IF;
+
     END IF;
     IF EXISTS (SELECT 1 FROM Utilizador WHERE Email = p_Email) THEN
         SIGNAL SQLSTATE '45000'

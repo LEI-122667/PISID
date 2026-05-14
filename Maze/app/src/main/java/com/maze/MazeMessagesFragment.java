@@ -2,6 +2,7 @@ package com.maze;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -47,6 +48,9 @@ public class MazeMessagesFragment extends Fragment {
     private TextView tvMessages;
     private OkHttpClient client;
 
+    private final Handler handler = new Handler();
+    private Runnable refreshRunnable;
+
     public MazeMessagesFragment() {
         // Required empty public constructor
     }
@@ -81,13 +85,34 @@ public class MazeMessagesFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_maze_messages, container, false);
         tvMessages = view.findViewById(R.id.tvMessages);
+
+        refreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                fetchMessages();
+                handler.postDelayed(this, 1000); // 1 segundo
+            }
+        };
+
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        handler.post(refreshRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        handler.removeCallbacks(refreshRunnable);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        fetchMessages();
+        // fetchMessages(); // Removido pois onResume já inicia
     }
 
     private void fetchMessages() {

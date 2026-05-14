@@ -33,7 +33,7 @@ if ($conn->connect_error) {
 }
 
 // 3. Consulta
-$sql = "SELECT Sala, NumeroMarsamisEven, NumeroMarsamisOdd FROM OcupacaoLabirinto WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1)";
+$sql = "SELECT Sala, NumeroMarsamisEven, NumeroMarsamisOdd FROM OcupacaoLabirinto WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao ORDER BY Ativo DESC, IDSimulacao DESC LIMIT 1)";
 $result = $conn->query($sql);
 
 if ($result) {
