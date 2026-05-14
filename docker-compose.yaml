@@ -29,7 +29,6 @@ services:
   mongodb1:
     image: mongo:latest
     container_name: mongodb1
-    # --replSet define o nome do cluster, --bind_ip_all permite conexões externas
     command: ["--replSet", "rs0", "--bind_ip_all"]
     restart: always
     environment:
@@ -38,6 +37,12 @@ services:
       - "27018:27017"
     volumes:
       - mongo1_data:/data/db
+    # ADDED: Healthcheck to ensure the node is ready before others connect
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mongodb2:
     image: mongo:latest
@@ -50,6 +55,12 @@ services:
       - "27019:27017"
     volumes:
       - mongo2_data:/data/db
+    # ADDED: Healthcheck
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mongodb3:
     image: mongo:latest
@@ -62,36 +73,41 @@ services:
       - "27020:27017"
     volumes:
       - mongo3_data:/data/db
+    # ADDED: Healthcheck
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # Serviço temporário para configurar a replicação automaticamente
   mongo-init:
-    image: mongo:latest
-    container_name: mongo-init
-    depends_on:
-      - mongodb1
-      - mongodb2
-      - mongodb3
-    entrypoint: >
-      bash -c "sleep 15;
-      mongosh --host mongodb1:27017 --eval '
-        try {
-          if (rs.status().ok) {
-            print(\"Replica Set já configurado. A sair...\");
-            quit(0);
+      image: mongo:latest
+      container_name: mongo-init
+      depends_on:
+        mongodb1:
+          condition: service_healthy
+        mongodb2:
+          condition: service_healthy
+        mongodb3:
+          condition: service_healthy
+      entrypoint: >
+        bash -c "sleep 5;
+        mongosh --host mongodb1:27017 --eval '
+          try {
+            rs.status();
+            print(\"Replica Set already configured.\");
+          } catch (e) {
+            print(\"Replica Set not found. Initiating...\");
+            rs.initiate({
+              _id: \"rs0\",
+              members: [
+                {_id: 0, host: \"mongodb1:27017\", priority: 2},
+                {_id: 1, host: \"mongodb2:27017\", priority: 1},
+                {_id: 2, host: \"mongodb3:27017\", priority: 1}
+              ]
+            });
           }
-        } catch (e) {
-          print(\"Configurando Replica Set...\");
-          rs.initiate({
-            _id: \"rs0\",
-            members: [
-              {_id: 0, host: \"mongodb1:27017\", priority: 2},
-              {_id: 1, host: \"mongodb2:27017\", priority: 1},
-              {_id: 2, host: \"mongodb3:27017\", priority: 1}
-            ]
-          });
-        }
-      '"
-
+        '"
   php:
     build:
       context: .
@@ -104,9 +120,13 @@ services:
       - ./web:/var/www/html
       - ./scripts:/var/www/scripts
       - ./mazerun:/var/www/mazerun
+    # CHANGED: Added service_healthy conditions to prevent PHP from crashing 
+    # if it tries to connect while Mongo is still electing a primary.
     depends_on:
-      - mysql
-      - mongodb1
+      mysql:
+        condition: service_started
+      mongodb1:
+        condition: service_healthy
     environment:
       TZ: "Europe/Lisbon"
     extra_hosts:

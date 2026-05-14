@@ -48,39 +48,55 @@ class mongoToMqtt:
         pass
 
     def connectToMongoDB(self):
-        mongo_nodes = [27018, 27019, 27020]
-        pisid_db_name = "pisid_maze"
-        
-        print("🔎 À procura do nó PRIMARY no Cluster (sem autenticação)...")
-        
-        for porta in mongo_nodes:
-            try:
-                uri = f"mongodb://localhost:{porta}/"
-                
-                client_teste = pymongo.MongoClient(
-                    uri, 
-                    directConnection=True, 
-                    serverSelectionTimeoutMS=2000
-                )
-                
-                is_master_result = client_teste.admin.command('ismaster')
-                
-                if is_master_result.get('ismaster'):
-                    self.clientMongoDB = client_teste
-                    self.db = self.clientMongoDB[pisid_db_name]
+            mongo_nodes = [27018, 27019, 27020]
+            pisid_db_name = "pisid_maze"
+            connected = False
+            
+            # IMPORTANTE: Fechar conexões antigas antes de tentar novas
+            if self.clientMongoDB:
+                try:
+                    self.clientMongoDB.close()
+                except:
+                    pass
+
+            print("🔎 À procura do nó PRIMARY no Cluster...")
+            
+            for porta in mongo_nodes:
+                try:
+                    # Criamos um cliente novo e limpo para cada tentativa
+                    client_teste = pymongo.MongoClient(
+                        'localhost', 
+                        porta, 
+                        directConnection=True, 
+                        serverSelectionTimeoutMS=2000
+                    )
                     
-                    # ESTAS LINHAS GARANTEM QUE O RESTO DO CÓDIGO USA O CAMINHO NOVO:
-                    self.collection = self.db[self.collection_name]
-                    self.outlier_collection = self.db[self.outlier_collection_name]
-                    return True
-                
-                client_teste.close()
-                
-            except Exception:
-                continue
-        
-        print("❌ ERRO: Não foi possível encontrar um nó PRIMARY ativo.")
-        return False
+                    is_master_result = client_teste.admin.command('ismaster')
+                    
+                    if is_master_result.get('ismaster'):
+                        print(f"✅ PRIMARY encontrado na porta {porta}!")
+                        self.clientMongoDB = client_teste
+                        self.db = self.clientMongoDB[pisid_db_name]
+                        
+                        # RE-INSTANCIAR as coleções para garantir que usam o novo PRIMARY
+                        self.collection = self.db[self.collection_name]
+                        self.outlier_collection = self.db[self.outlier_collection_name]
+                        
+                        # Recarregar coleções de suporte (corredores, etc)
+                        if hasattr(self, 'corredores_col'):
+                            self.corredores_col = self.db["corredores"]
+                        
+                        connected = True
+                        break 
+                    else:
+                        client_teste.close()
+                except Exception:
+                    continue
+
+            if connected:
+                print(f"✅✅✅✅✅ Cluster Reconfigurado!")
+                return True
+            return False
 
     def publishData(self, client):
         while True:
@@ -105,14 +121,11 @@ class mongoToMqtt:
                             
                 sleep(1)
 
-            except (pymongo.errors.AutoReconnect, pymongo.errors.ServerSelectionTimeoutError, Exception) as e:
-                print(f"⚠️ Conexão perdida no loop de publicação: {e}")
-                
+            except (pymongo.errors.PyMongoError, Exception) as e:
+                print(f"⚠️ Erro Crítico: {e}")
+                sleep(3) # Dá tempo ao Cluster para eleger o novo Primary
                 if self.connectToMongoDB():
-                    print("✅ Reconexão bem-sucedida. A retomar processamento...")
-                    continue 
-                else:
-                    sleep(1)
+                    print("✅ Reconexão bem-sucedida.")
 
     def sendDoc(self, doc, client, label="Enviado"):
         try:
