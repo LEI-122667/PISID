@@ -31,7 +31,7 @@ if ($conn->connect_error) {
 }
 
 // Query para obter os dados de temperatura
-$sql = "SELECT temperatura, idtemperatura FROM Temperatura WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1) ORDER BY idtemperatura ASC";
+$sql = "SELECT temperatura, idtemperatura FROM Temperatura WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao ORDER BY Ativo DESC, IDSimulacao DESC LIMIT 1) ORDER BY idtemperatura ASC";
 $result = $conn->query($sql);
 
 if ($result) {

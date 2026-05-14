@@ -32,7 +32,7 @@ if ($conn->connect_error) {
 }
 
 // 3. Consulta
-$sql = "SELECT id, tipoalerta, hora, msg, leitura, sensor FROM Mensagens WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1) ORDER BY id DESC";
+$sql = "SELECT id, tipoalerta, hora, msg, leitura, sensor FROM Mensagens WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao ORDER BY Ativo DESC, IDSimulacao DESC LIMIT 1) ORDER BY id DESC";
 $result = $conn->query($sql);
 
 if ($result) {

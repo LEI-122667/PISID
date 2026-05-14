@@ -824,17 +824,12 @@ BEGIN
         s.IDSimulacao,
         s.Pontuacao,
         s.DataHoraInicio,
-        COUNT(DISTINCT m.ID)                                            AS TotalAlertas,
-        COUNT(DISTINCT CASE WHEN c.Fechado = TRUE THEN c.IDCorridor END) AS TotalCorredoresFechados,
-        ROUND(AVG(t.Temperatura), 2)                                    AS MediaTemperatura,
-        ROUND(AVG(so.Som), 2)                                           AS MediaSom
+        (SELECT COUNT(*) FROM Mensagens m WHERE m.IDSimulacao = s.IDSimulacao) AS TotalAlertas,
+        (SELECT COUNT(*) FROM Corridor c WHERE c.IDSimulacao = s.IDSimulacao AND c.Fechado = TRUE) AS TotalCorredoresFechados,
+        (SELECT ROUND(AVG(t.Temperatura), 2) FROM Temperatura t WHERE t.IDSimulacao = s.IDSimulacao) AS MediaTemperatura,
+        (SELECT ROUND(AVG(so.Som), 2) FROM Som so WHERE so.IDSimulacao = s.IDSimulacao) AS MediaSom
     FROM Simulacao s
-    LEFT JOIN Mensagens   m  ON m.IDSimulacao  = s.IDSimulacao
-    LEFT JOIN Corridor    c  ON c.IDSimulacao  = s.IDSimulacao
-    LEFT JOIN Temperatura t  ON t.IDSimulacao  = s.IDSimulacao
-    LEFT JOIN Som         so ON so.IDSimulacao = s.IDSimulacao
     WHERE s.Ativo = FALSE
-    GROUP BY s.IDSimulacao, s.Equipa, s.Pontuacao, s.DataHoraInicio
     ORDER BY s.Pontuacao DESC;
 END$$
 

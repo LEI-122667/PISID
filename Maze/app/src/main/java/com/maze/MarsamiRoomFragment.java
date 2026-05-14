@@ -3,6 +3,7 @@ package com.maze;
 import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -54,6 +55,9 @@ public class MarsamiRoomFragment extends Fragment {
     private BarChart barChart;
     private OkHttpClient client;
 
+    private final Handler handler = new Handler();
+    private Runnable refreshRunnable;
+
     public MarsamiRoomFragment() {
         // Required empty public constructor
     }
@@ -88,13 +92,34 @@ public class MarsamiRoomFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_marsami_room, container, false);
         barChart = view.findViewById(R.id.barChart); // Assuma que você tem um BarChart com este ID no seu XML
         setupChart();
+
+        refreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                fetchRoomData();
+                handler.postDelayed(this, 1000); // 1 segundo
+            }
+        };
+
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        handler.post(refreshRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        handler.removeCallbacks(refreshRunnable);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        fetchRoomData();
+        // fetchRoomData(); // Removido pois onResume já inicia
     }
 
     private void setupChart() {

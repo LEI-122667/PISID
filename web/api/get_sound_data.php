@@ -28,7 +28,7 @@ if ($conn->connect_error) {
     exit;
 }
 
-$sql = "SELECT som, idsom FROM Som WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao WHERE Ativo = TRUE LIMIT 1) ORDER BY idsom ASC";
+$sql = "SELECT som, idsom FROM Som WHERE IDSimulacao = (SELECT IDSimulacao FROM Simulacao ORDER BY Ativo DESC, IDSimulacao DESC LIMIT 1) ORDER BY idsom ASC";
 $result = $conn->query($sql);
 
 if ($result) {

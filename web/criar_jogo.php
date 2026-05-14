@@ -144,11 +144,11 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             <h3>Configuração do Jogo</h3>
                             <div class="form-group">
                                 <label>Outliers Temperatura</label>
-                                <input type="number" step="0.01" name="outliers_temp" required value="2.0">
+                                <input type="number" step="0.01" name="outliers_temp" required value="4.0">
                             </div>
                             <div class="form-group">
                                 <label>Outliers Som</label>
-                                <input type="number" step="0.01" name="outliers_som" required value="2.0">
+                                <input type="number" step="0.01" name="outliers_som" required value="4.0">
                             </div>
                             <div class="form-group">
                                 <label>Alerta Temp. High (graus abaixo do limite)</label>
@@ -178,8 +178,8 @@ if (!isset($blocked) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="form-group">
                                 <label>Modo de Fecho (Movimento Odd=Even)</label>
                                 <select name="modo_fecho" required style="margin-bottom: 10px;">
-                                    <option value="0">Fechar apenas corredores da sala</option>
                                     <option value="1">Fechar todos os corredores</option>
+                                    <option value="0">Fechar apenas corredores da sala</option>
                                 </select>
                             </div>
                         </div>
